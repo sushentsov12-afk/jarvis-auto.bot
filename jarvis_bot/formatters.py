@@ -4,31 +4,38 @@ from catalog import PartItem, ServiceItem
 def welcome_text() -> str:
     return (
         "<b>Jarvis Auto</b> — ваш автопомощник.\n\n"
-        "Выберите код ошибки OBD, опишите симптом текстом "
-        "или задайте вопрос — я подскажу деталь, цену и сервис."
+        "🔍 <b>Диагностика</b> — введите код OBD или опишите симптом\n"
+        "🏪 <b>Автосервисы</b> — ближайшие СТО с рейтингом\n"
+        "🆘 <b>SOS</b> — номера ГИБДД и аварийных комиссаров\n\n"
+        "Просто напишите проблему — я помогу."
     )
 
 
 def help_text(ai_enabled: bool) -> str:
     lines = [
+        "<b>Как пользоваться Jarvis Auto</b>\n",
         "<b>Команды</b>",
         "/start — главное меню",
-        "/help — эта справка",
         "/services — список автосервисов",
+        "/sos — экстренные номера",
+        "/help — эта справка",
         "",
         "<b>Примеры запросов</b>",
-        "• <code>P0301</code> — диагностика по коду",
+        "• <code>P0301</code> — диагностика по OBD-коду",
         "• <code>не заводится утром</code>",
         "• <code>стук при торможении</code>",
+        "• <code>перегрев двигателя</code>",
     ]
     if ai_enabled:
-        lines.append("")
-        lines.append("Если в базе нет ответа — подключён GigaChat для свободных вопросов.")
+        lines += [
+            "",
+            "💬 GigaChat подключён — можете задать любой вопрос по автомобилю.",
+        ]
     else:
-        lines.append("")
-        lines.append(
-            "Для ответов на свободные вопросы добавьте <code>GIGACHAT_CREDENTIALS</code> в файл .env"
-        )
+        lines += [
+            "",
+            "ℹ️ Для свободных вопросов добавьте <code>GIGACHAT_CREDENTIALS</code> в .env",
+        ]
     return "\n".join(lines)
 
 
@@ -45,7 +52,7 @@ def format_part(part: PartItem, title: str = "Рекомендация") -> str:
 
 
 def format_services(services: list[ServiceItem]) -> str:
-    lines = ["<b>Ближайшие автосервисы</b>\n"]
+    lines = ["<b>🏪 Ближайшие автосервисы</b>\n"]
     for i, s in enumerate(services, 1):
         lines.append(
             f"{i}. <b>{s.name}</b> ★ {s.rating}\n"
@@ -59,6 +66,7 @@ def format_services(services: list[ServiceItem]) -> str:
 def format_ai_fallback(user_text: str) -> str:
     return (
         f"По запросу «{user_text}» в каталоге точного совпадения нет.\n\n"
-        "Попробуйте указать код OBD (например, P0301) или опишите симптом иначе. "
-        "Можно воспользоваться кнопками меню ниже."
+        "Попробуйте указать код OBD (например, <code>P0301</code>) "
+        "или опишите симптом иначе. "
+        "Воспользуйтесь кнопками меню ниже."
     )

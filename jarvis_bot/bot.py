@@ -1,7 +1,6 @@
 import logging
 import sys
 
-import telebot
 from telebot import TeleBot, apihelper
 from telebot.types import CallbackQuery, Message
 
@@ -16,7 +15,12 @@ from formatters import (
     help_text,
     welcome_text,
 )
-from keyboards import main_inline_keyboard, main_reply_keyboard, WEB_APP_URL
+from keyboards import (
+    main_inline_keyboard,
+    main_reply_keyboard,
+    sos_location_keyboard,
+)
+from sos_geo import format_sos
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,6 +34,10 @@ SERVICES = load_services()
 bot: TeleBot = TeleBot(BOT_TOKEN, parse_mode="HTML")
 
 
+# ──────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────
+
 def send_main_menu(chat_id: int, text: str | None = None) -> None:
     bot.send_message(
         chat_id,
@@ -38,7 +46,7 @@ def send_main_menu(chat_id: int, text: str | None = None) -> None:
     )
     bot.send_message(
         chat_id,
-        "Быстрый выбор:",
+        "Выберите из меню или введите код OBD / симптом:",
         reply_markup=main_inline_keyboard(PARTS),
     )
 
@@ -51,6 +59,22 @@ def reply_with_part(message: Message, part, title: str = "Рекомендаци
         disable_web_page_preview=True,
     )
 
+
+def ask_for_location(chat_id: int) -> None:
+    """Просим геолокацию перед показом SOS."""
+    bot.send_message(
+        chat_id,
+        "📍 <b>SOS</b>\n\n"
+        "Отправьте геолокацию — покажу <b>местный номер ГИБДД</b> "
+        "и ближайших аварийных комиссаров.\n\n"
+        "Или нажмите «Без геолокации» — получите федеральные номера.",
+        reply_markup=sos_location_keyboard(),
+    )
+
+
+# ──────────────────────────────────────────────
+# Commands
+# ──────────────────────────────────────────────
 
 @bot.message_handler(commands=["start"])
 def cmd_start(message: Message) -> None:
@@ -75,47 +99,83 @@ def cmd_services(message: Message) -> None:
     )
 
 
-@bot.message_handler(commands=["webapp"])
-def cmd_webapp(message: Message) -> None:
-    bot.send_message(
-        message.chat.id,
-        f"🌐 <b>Jarvis Auto — полная веб-версия</b>\n\n"
-        f"Там доступно:\n"
-        f"• 📊 Аналитика расходов\n"
-        f"• 🚗 Интерактивная схема кузова\n"
-        f"• 📅 Записи в сервис\n"
-        f"• 🛞 Контроль давления шин\n"
-        f"• 📄 Документы (ОСАГО, КАСКО)\n"
-        f"• 💡 AI-советы Джарвиса\n\n"
-        f'👉 <a href="{WEB_APP_URL}">{WEB_APP_URL}</a>',
-        reply_markup=main_inline_keyboard(PARTS),
-        disable_web_page_preview=False,
-    )
+@bot.message_handler(commands=["sos"])
+def cmd_sos(message: Message) -> None:
+    ask_for_location(message.chat.id)
 
 
-@bot.message_handler(func=lambda m: m.text in ("Справка", "/help"))
+# ──────────────────────────────────────────────
+# Reply keyboard buttons
+# ──────────────────────────────────────────────
+
+@bot.message_handler(func=lambda m: m.text in ("❓ Справка", "Справка", "/help"))
 def btn_help(message: Message) -> None:
     cmd_help(message)
 
 
-@bot.message_handler(func=lambda m: m.text in ("Автосервисы", "/services"))
+@bot.message_handler(func=lambda m: m.text in ("🏪 Автосервисы", "Автосервисы", "/services"))
 def btn_services(message: Message) -> None:
     cmd_services(message)
 
 
-@bot.message_handler(func=lambda m: m.text == "Коды OBD")
-def btn_obd_menu(message: Message) -> None:
+@bot.message_handler(func=lambda m: m.text in ("🆘 SOS", "/sos"))
+def btn_sos(message: Message) -> None:
+    ask_for_location(message.chat.id)
+
+
+@bot.message_handler(func=lambda m: m.text == "🔙 Без геолокации (федеральные номера)")
+def btn_sos_no_geo(message: Message) -> None:
+    """Пользователь отказался от геолокации — даём федеральные номера."""
     bot.send_message(
         message.chat.id,
-        "Выберите код ошибки или введите его в чат (например, P0301):",
+        format_sos(),                    # без координат
+        reply_markup=main_inline_keyboard(PARTS),
+        disable_web_page_preview=True,
+    )
+
+
+@bot.message_handler(func=lambda m: m.text in ("🔍 Диагностика", "Коды OBD"))
+def btn_diagnostics(message: Message) -> None:
+    bot.send_message(
+        message.chat.id,
+        "Введите код OBD (например, <code>P0301</code>) "
+        "или опишите симптом (например, <i>стук при торможении</i>):",
         reply_markup=main_inline_keyboard(PARTS),
     )
 
 
-@bot.message_handler(func=lambda m: m.text == "🌐 Открыть веб-версию")
-def btn_webapp(message: Message) -> None:
-    cmd_webapp(message)
+# ──────────────────────────────────────────────
+# Геолокация — ГЛАВНЫЙ обработчик SOS
+# ──────────────────────────────────────────────
 
+@bot.message_handler(content_types=["location"])
+def on_location(message: Message) -> None:
+    loc = message.location
+    if not loc:
+        return
+
+    lat, lon = loc.latitude, loc.longitude
+    logger.info("Location received: lat=%.4f lon=%.4f from user=%s",
+                lat, lon, message.from_user.id)
+
+    text = format_sos(lat, lon)
+    bot.send_message(
+        message.chat.id,
+        text,
+        reply_markup=main_inline_keyboard(PARTS),
+        disable_web_page_preview=True,
+    )
+    # Возвращаем обычную клавиатуру после one-time клавиатуры геолокации
+    bot.send_message(
+        message.chat.id,
+        "Главное меню:",
+        reply_markup=main_reply_keyboard(),
+    )
+
+
+# ──────────────────────────────────────────────
+# Inline callbacks
+# ──────────────────────────────────────────────
 
 @bot.callback_query_handler(func=lambda c: True)
 def on_callback(call: CallbackQuery) -> None:
@@ -136,6 +196,17 @@ def on_callback(call: CallbackQuery) -> None:
             call.message.chat.id,
             call.message.message_id,
             reply_markup=main_inline_keyboard(PARTS),
+        )
+        return
+
+    if call.data == "sos_ask":
+        # Инлайн-кнопка SOS → просим геолокацию
+        bot.send_message(
+            call.message.chat.id,
+            "📍 <b>SOS</b>\n\n"
+            "Отправьте геолокацию — покажу местный ГИБДД и комиссаров.\n"
+            "Или нажмите «Без геолокации».",
+            reply_markup=sos_location_keyboard(),
         )
         return
 
@@ -161,6 +232,10 @@ def on_callback(call: CallbackQuery) -> None:
             disable_web_page_preview=True,
         )
 
+
+# ──────────────────────────────────────────────
+# Свободный текст
+# ──────────────────────────────────────────────
 
 @bot.message_handler(content_types=["text"])
 def on_text(message: Message) -> None:
@@ -194,6 +269,10 @@ def on_text(message: Message) -> None:
     )
 
 
+# ──────────────────────────────────────────────
+# Entry point
+# ──────────────────────────────────────────────
+
 def main() -> None:
     if not BOT_TOKEN:
         logger.error("BOT_TOKEN is not set. Create a .env file (see .env.example).")
@@ -206,7 +285,10 @@ def main() -> None:
     if not check_telegram(BOT_TOKEN, proxies):
         sys.exit(1)
 
-    logger.info("Jarvis Auto started (AI: %s)", "on" if ai_assistant.is_enabled() else "off")
+    logger.info(
+        "Jarvis Auto started (AI: %s)",
+        "on" if ai_assistant.is_enabled() else "off",
+    )
     bot.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)
 
 

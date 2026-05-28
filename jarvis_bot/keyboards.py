@@ -11,33 +11,41 @@ WEB_APP_URL = "https://jarvis-auto-psi.vercel.app"
 
 
 def main_reply_keyboard() -> ReplyKeyboardMarkup:
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    """Компактная клавиатура: 4 кнопки."""
+    kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     kb.add(
-        KeyboardButton("Коды OBD"),
-        KeyboardButton("Автосервисы"),
+        KeyboardButton("🔍 Диагностика"),
+        KeyboardButton("🏪 Автосервисы"),
     )
     kb.add(
-        KeyboardButton("🌐 Открыть веб-версию"),
-        KeyboardButton("Справка"),
+        KeyboardButton("🆘 SOS"),
+        KeyboardButton("❓ Справка"),
     )
     return kb
 
 
+def sos_location_keyboard() -> ReplyKeyboardMarkup:
+    """Клавиатура с кнопкой отправки геолокации."""
+    kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1, one_time_keyboard=True)
+    kb.add(KeyboardButton("📍 Отправить моё местоположение", request_location=True))
+    kb.add(KeyboardButton("🔙 Без геолокации (федеральные номера)"))
+    return kb
+
+
 def main_inline_keyboard(parts: list[PartItem]) -> InlineKeyboardMarkup:
+    """Инлайн-меню: OBD-коды + автосервисы + SOS + главное меню."""
     markup = InlineKeyboardMarkup(row_width=1)
     for part in obd_items(parts):
         markup.add(
             InlineKeyboardButton(
-                text=f"Ошибка {part.id}",
+                text=f"⚠️ {part.id} — {part.name}",
                 callback_data=f"sym_{part.id}",
             )
         )
     markup.add(
-        InlineKeyboardButton(text="Автосервисы", callback_data="get_services"),
-        InlineKeyboardButton(
-            text="🌐 Полная версия (сайт)",
-            url=WEB_APP_URL,
-        ),
-        InlineKeyboardButton(text="Главное меню", callback_data="main_menu"),
+        InlineKeyboardButton(text="🏪 Автосервисы рядом", callback_data="get_services"),
+        InlineKeyboardButton(text="🆘 SOS / Авария",      callback_data="sos_ask"),
+        InlineKeyboardButton(text="🌐 Полная версия",      url=WEB_APP_URL),
+        InlineKeyboardButton(text="🏠 Главное меню",       callback_data="main_menu"),
     )
     return markup
