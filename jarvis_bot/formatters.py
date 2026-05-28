@@ -1,14 +1,26 @@
 from catalog import PartItem, ServiceItem
 
 
-def welcome_text() -> str:
-    return (
-        "<b>Jarvis Auto</b> — ваш автопомощник.\n\n"
-        "🔍 <b>Диагностика</b> — введите код OBD или опишите симптом\n"
-        "🏪 <b>Автосервисы</b> — ближайшие СТО с рейтингом\n"
-        "🆘 <b>SOS</b> — номера ГИБДД и аварийных комиссаров\n\n"
-        "Просто напишите проблему — я помогу."
+def welcome_text(first_name: str | None = None, username: str | None = None) -> str:
+    # Формируем обращение: имя если есть, иначе ник, иначе ничего
+    if first_name:
+        address = f"<b>{first_name}</b>"
+    elif username:
+        address = f"<b>@{username}</b>"
+    else:
+        address = None
+
+    greeting = (
+        f"Вас приветствует ваш личный помощник <b>Джек</b>.\n\n"
+        f"{'Привет, ' + address + '!' if address else 'Привет!'} "
+        f"{'Ник аккаунта: @' + username if username else ''}\n\n"
+        f"Чем могу помочь?\n\n"
+        f"🔍 <b>Диагностика</b> — введите код OBD или опишите симптом\n"
+        f"🏪 <b>Автосервисы</b> — ближайшие СТО с рейтингом\n"
+        f"🆘 <b>SOS</b> — номера ГИБДД и аварийных комиссаров\n\n"
+        f"Просто напишите проблему — я помогу."
     )
+    return greeting
 
 
 def help_text(ai_enabled: bool) -> str:

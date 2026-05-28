@@ -38,10 +38,15 @@ bot: TeleBot = TeleBot(BOT_TOKEN, parse_mode="HTML")
 # Helpers
 # ──────────────────────────────────────────────
 
-def send_main_menu(chat_id: int, text: str | None = None) -> None:
+def send_main_menu(
+    chat_id: int,
+    first_name: str | None = None,
+    username: str | None = None,
+    text: str | None = None,
+) -> None:
     bot.send_message(
         chat_id,
-        text or welcome_text(),
+        text or welcome_text(first_name, username),
         reply_markup=main_reply_keyboard(),
     )
     bot.send_message(
@@ -78,7 +83,12 @@ def ask_for_location(chat_id: int) -> None:
 
 @bot.message_handler(commands=["start"])
 def cmd_start(message: Message) -> None:
-    send_main_menu(message.chat.id)
+    user = message.from_user
+    send_main_menu(
+        message.chat.id,
+        first_name=user.first_name if user else None,
+        username=user.username if user else None,
+    )
 
 
 @bot.message_handler(commands=["help"])
@@ -182,8 +192,12 @@ def on_callback(call: CallbackQuery) -> None:
     bot.answer_callback_query(call.id)
 
     if call.data == "main_menu":
+        user = call.from_user
         bot.edit_message_text(
-            welcome_text(),
+            welcome_text(
+                first_name=user.first_name if user else None,
+                username=user.username if user else None,
+            ),
             call.message.chat.id,
             call.message.message_id,
             reply_markup=main_inline_keyboard(PARTS),
