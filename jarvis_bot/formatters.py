@@ -63,8 +63,29 @@ def format_part(part: PartItem, title: str = "Рекомендация") -> str:
     )
 
 
-def format_services(services: list[ServiceItem]) -> str:
-    lines = ["<b>🏪 Ближайшие автосервисы</b>\n"]
+def format_services(services: list[ServiceItem], city_key: str = "") -> str:
+    """
+    Список СТО. Если city_key задан — показывает спонсоров с металлическими
+    значками поверх обычного списка.
+    """
+    lines = ["<b>🏪 Автосервисы Йошкар-Олы</b>\n"]
+
+    # Спонсорский блок (если есть для города)
+    if city_key:
+        try:
+            from sponsors import format_sto_sponsors
+            sponsor_text = format_sto_sponsors(city_key)
+            if sponsor_text:
+                lines.append("<b>✨ Партнёры Jarvis Auto</b>")
+                lines.append(sponsor_text)
+                lines.append("")
+                lines.append("─" * 28)
+                lines.append("")
+        except ImportError:
+            pass
+
+    # Обычный список из базы
+    lines.append("<b>📋 Другие сервисы</b>")
     for i, s in enumerate(services, 1):
         lines.append(
             f"{i}. <b>{s.name}</b> ★ {s.rating}\n"

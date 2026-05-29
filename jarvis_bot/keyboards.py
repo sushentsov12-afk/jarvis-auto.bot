@@ -32,9 +32,14 @@ def sos_location_keyboard() -> ReplyKeyboardMarkup:
     return kb
 
 
-def main_inline_keyboard(parts: list[PartItem]) -> InlineKeyboardMarkup:
-    """Инлайн-меню: OBD-коды + автосервисы + SOS + главное меню."""
+def main_inline_keyboard(parts: list[PartItem], city_key: str = "") -> InlineKeyboardMarkup:
+    """
+    Инлайн-меню: OBD-коды + автосервисы + SOS.
+    Если city_key передан — добавляет золотую кнопку спонсора-СТО.
+    """
     markup = InlineKeyboardMarkup(row_width=1)
+
+    # OBD коды
     for part in obd_items(parts):
         markup.add(
             InlineKeyboardButton(
@@ -42,10 +47,53 @@ def main_inline_keyboard(parts: list[PartItem]) -> InlineKeyboardMarkup:
                 callback_data=f"sym_{part.id}",
             )
         )
+
+    # Золотая кнопка СТО-спонсора если есть
+    if city_key:
+        try:
+            from sponsors import get_gold_sto
+            gold = get_gold_sto(city_key)
+            if gold:
+                markup.add(
+                    InlineKeyboardButton(
+                        text=f"🥇 {gold.name} — Рекомендуем!",
+                        callback_data=f"sponsor_sto_{city_key}",
+                    )
+                )
+        except ImportError:
+            pass
+
     markup.add(
         InlineKeyboardButton(text="🏪 Автосервисы рядом", callback_data="get_services"),
         InlineKeyboardButton(text="🆘 SOS / Авария",      callback_data="sos_ask"),
         InlineKeyboardButton(text="🌐 Полная версия",      url=WEB_APP_URL),
         InlineKeyboardButton(text="🏠 Главное меню",       callback_data="main_menu"),
+    )
+    return markup
+
+
+def sos_inline_keyboard(city_key: str = "") -> InlineKeyboardMarkup:
+    """
+    Инлайн под SOS-сообщением.
+    Если есть золотой комиссар — выделенная кнопка первой.
+    """
+    markup = InlineKeyboardMarkup(row_width=1)
+
+    if city_key:
+        try:
+            from sponsors import get_gold_komissar
+            gold = get_gold_komissar(city_key)
+            if gold:
+                markup.add(
+                    InlineKeyboardButton(
+                        text=f"🥇 Позвонить: {gold.name}",
+                        callback_data=f"sponsor_kom_{city_key}",
+                    )
+                )
+        except ImportError:
+            pass
+
+    markup.add(
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu"),
     )
     return markup

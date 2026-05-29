@@ -19,6 +19,7 @@ from keyboards import (
     main_inline_keyboard,
     main_reply_keyboard,
     sos_location_keyboard,
+    sos_inline_keyboard,
 )
 from sos_geo import format_sos
 
@@ -104,8 +105,8 @@ def cmd_help(message: Message) -> None:
 def cmd_services(message: Message) -> None:
     bot.send_message(
         message.chat.id,
-        format_services(SERVICES),
-        reply_markup=main_inline_keyboard(PARTS),
+        format_services(SERVICES, city_key="yoshkar_ola"),
+        reply_markup=main_inline_keyboard(PARTS, city_key="yoshkar_ola"),
     )
 
 
@@ -168,14 +169,18 @@ def on_location(message: Message) -> None:
     logger.info("Location received: lat=%.4f lon=%.4f from user=%s",
                 lat, lon, message.from_user.id)
 
+    # Определяем city_key для спонсорских кнопок
+    from sos_geo import find_city, _city_key
+    city, dist = find_city(lat, lon)
+    city_key = _city_key(city.name) if city and dist <= city.radius else ""
+
     text = format_sos(lat, lon)
     bot.send_message(
         message.chat.id,
         text,
-        reply_markup=main_inline_keyboard(PARTS),
+        reply_markup=sos_inline_keyboard(city_key),
         disable_web_page_preview=True,
     )
-    # Возвращаем обычную клавиатуру после one-time клавиатуры геолокации
     bot.send_message(
         message.chat.id,
         "Главное меню:",
@@ -214,7 +219,6 @@ def on_callback(call: CallbackQuery) -> None:
         return
 
     if call.data == "sos_ask":
-        # Инлайн-кнопка SOS → просим геолокацию
         bot.send_message(
             call.message.chat.id,
             "📍 <b>SOS</b>\n\n"
@@ -222,6 +226,42 @@ def on_callback(call: CallbackQuery) -> None:
             "Или нажмите «Без геолокации».",
             reply_markup=sos_location_keyboard(),
         )
+        return
+
+    if call.data.startswith("sponsor_sto_"):
+        city_key = call.data.removeprefix("sponsor_sto_")
+        from sponsors import format_sto_sponsors
+        text = (
+            "🥇 <b>Рекомендованные СТО — партнёры Jarvis Auto</b>\n\n"
+            + format_sto_sponsors(city_key)
+        )
+        bot.send_message(
+            call.message.chat.id,
+            text,
+            reply_markup=main_inline_keyboard(PARTS, city_key),
+            disable_web_page_preview=True,
+        )
+        return
+
+    if call.data.startswith("sponsor_kom_"):
+        city_key = call.data.removeprefix("sponsor_kom_")
+        from sponsors import get_gold_komissar
+        gold = get_gold_komissar(city_key)
+        if gold:
+            text = (
+                f"🥇 <b>{gold.name}</b>  ╠══ ЗОЛОТОЙ ПАРТНЁР ══╣\n\n"
+                f"⏰ {gold.work_time}  |  ★ {gold.rating}\n"
+                f"📞 <code>{gold.phone}</code>\n"
+                f"🌐 {gold.url}\n\n"
+                f"📍 {gold.address}\n\n"
+                f"<i>Расходы на оформление ДТП возместит страховая компания!</i>"
+            )
+            bot.send_message(
+                call.message.chat.id,
+                text,
+                reply_markup=sos_inline_keyboard(city_key),
+                disable_web_page_preview=True,
+            )
         return
 
     if call.data.startswith("sym_"):

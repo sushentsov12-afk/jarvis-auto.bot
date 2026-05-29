@@ -50,6 +50,12 @@ CITIES: list[CityInfo] = [
              [("КомиссарКЗН",        "+7 (843) 514-22-22"),
               ("ДТП-Помощь",         "+7 (800) 707-17-73")]),
 
+    CityInfo("Йошкар-Ола", 56.6344, 47.8969, 0.4,
+             "+7 (8362) 42-02-02",
+             [("АвтоКомиссар12",     "+7 (8362) 201-201"),
+              ("АВАРКОМ 709",        "+7 (8362) 709-709"),
+              ("Центр помощи 908",   "+7 (8362) 908-908")]),
+
     CityInfo("Нижний Новгород", 56.2965, 43.9361, 0.5,
              "+7 (831) 262-00-02",
              [("АвтоКомиссар НН",    "+7 (831) 433-55-55"),
@@ -317,12 +323,21 @@ def format_sos(lat: float | None = None, lon: float | None = None) -> str:
         city, dist = find_city(lat, lon)
 
         if city and dist <= city.radius:
+            # Определяем city_key для спонсорской базы
+            city_key = _city_key(city.name)
             lines.append(f"<b>📍 Ваш город: {city.name}</b>")
             lines.append(f"🚔 ГИБДД {city.name} — <code>{city.gai}</code>")
             lines.append("")
-            lines.append(f"<b>⭐ Аварийные комиссары — {city.name}</b>")
-            for name, phone in city.kommissar:
-                lines.append(f"• {name}: <code>{phone}</code>")
+
+            # Пробуем спонсорских комиссаров
+            sponsor_block = _sponsor_komissar_block(city_key)
+            if sponsor_block:
+                lines.append(f"<b>🆘 Аварийные комиссары — {city.name}</b>")
+                lines += sponsor_block
+            else:
+                lines.append(f"<b>⭐ Аварийные комиссары — {city.name}</b>")
+                for name, phone in city.kommissar:
+                    lines.append(f"• {name}: <code>{phone}</code>")
         elif city:
             # Нашли ближайший, но далеко (трасса/село)
             lines.append(f"<b>📍 Ближайший крупный город: {city.name}</b>")
@@ -355,6 +370,34 @@ def format_sos(lat: float | None = None, lon: float | None = None) -> str:
     ]
 
     return "\n".join(lines)
+
+
+# Маппинг название города → city_key для sponsors.py
+_CITY_KEY_MAP: dict[str, str] = {
+    "Йошкар-Ола": "yoshkar_ola",
+}
+
+
+def _city_key(city_name: str) -> str:
+    """Возвращает city_key для sponsors.py по названию города."""
+    return _CITY_KEY_MAP.get(city_name, "")
+
+
+def _sponsor_komissar_block(city_key: str) -> list[str]:
+    """
+    Возвращает список строк с комиссарами из sponsors.py,
+    если для города есть спонсорская база. Иначе пустой список.
+    """
+    if not city_key:
+        return []
+    try:
+        from sponsors import format_komissar_sponsors
+        text = format_komissar_sponsors(city_key)
+        if text:
+            return [text]
+    except ImportError:
+        pass
+    return []
 
 
 def _federal_block() -> list[str]:
