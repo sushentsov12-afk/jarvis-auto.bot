@@ -2,3 +2,5 @@ pyTelegramBotAPI==4.26.0
 gigachat==0.1.33
 python-dotenv==1.1.0
 PySocks==1.7.1
+
+rapidfuzz==3.9.3

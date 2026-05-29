@@ -5,6 +5,7 @@ from telebot import TeleBot, apihelper
 from telebot.types import CallbackQuery, Message
 
 import ai_assistant
+from diagnostic import smart_search, search_by_phrase, format_diagnostic
 from catalog import find_best_match, find_by_obd, load_parts, load_services
 from config import BOT_TOKEN
 from network import check_telegram, resolve_proxy
@@ -297,25 +298,41 @@ def on_text(message: Message) -> None:
     if not text or text.startswith("/"):
         return
 
+    bot.send_chat_action(message.chat.id, "typing")
+
+    # 1. Точный поиск по OBD-коду или симптому из старого каталога
     part = find_best_match(text, PARTS)
     if part:
         title = f"Диагностика {part.id}" if part.type == "obd" else "Подбор по симптому"
         reply_with_part(message, part, title=title)
         return
 
+    # 2. Умный нечёткий поиск по народным запросам (diagnostic_base.json)
+    result, confidence = search_by_phrase(text)
+    if result:
+        answer = format_diagnostic(result, confidence)
+        bot.send_message(
+            message.chat.id,
+            f"<b>🔎 Джек нашёл похожую проблему:</b>\n\n{answer}",
+            reply_markup=main_inline_keyboard(PARTS),
+            disable_web_page_preview=True,
+        )
+        return
+
+    # 3. GigaChat AI — если подключён
     if ai_assistant.is_enabled():
-        bot.send_chat_action(message.chat.id, "typing")
         try:
             answer = ai_assistant.ask(text)
             bot.send_message(
                 message.chat.id,
-                f"<b>Jarvis (AI):</b>\n\n{answer}",
+                f"<b>Джек (AI):</b>\n\n{answer}",
                 reply_markup=main_inline_keyboard(PARTS),
             )
             return
         except Exception:
             logger.exception("GigaChat request failed")
 
+    # 4. Fallback
     bot.send_message(
         message.chat.id,
         format_ai_fallback(text),
