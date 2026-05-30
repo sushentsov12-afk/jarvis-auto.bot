@@ -11,7 +11,7 @@ WEB_APP_URL = "https://jarvis-auto-psi.vercel.app"
 
 
 def main_reply_keyboard() -> ReplyKeyboardMarkup:
-    """Компактная клавиатура: 4 кнопки."""
+    """Компактная клавиатура: 5 кнопок."""
     kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     kb.add(
         KeyboardButton("🔍 Диагностика"),
@@ -19,6 +19,9 @@ def main_reply_keyboard() -> ReplyKeyboardMarkup:
     )
     kb.add(
         KeyboardButton("🆘 SOS"),
+        KeyboardButton("📋 Моя история"),
+    )
+    kb.add(
         KeyboardButton("❓ Справка"),
     )
     return kb
@@ -67,6 +70,36 @@ def main_inline_keyboard(parts: list[PartItem], city_key: str = "") -> InlineKey
         InlineKeyboardButton(text="🏪 Автосервисы рядом", callback_data="get_services"),
         InlineKeyboardButton(text="🆘 SOS / Авария",      callback_data="sos_ask"),
         InlineKeyboardButton(text="🌐 Полная версия",      url=WEB_APP_URL),
+        InlineKeyboardButton(text="🏠 Главное меню",       callback_data="main_menu"),
+    )
+    return markup
+
+
+def after_diagnostic_keyboard(city_key: str = "yoshkar_ola") -> InlineKeyboardMarkup:
+    """
+    Кнопки под результатом диагностики:
+    золотое СТО-спонсор + список всех сервисов + главное меню.
+    """
+    markup = InlineKeyboardMarkup(row_width=1)
+
+    # Золотая кнопка спонсора СТО
+    if city_key:
+        try:
+            from sponsors import get_gold_sto
+            gold = get_gold_sto(city_key)
+            if gold:
+                markup.add(
+                    InlineKeyboardButton(
+                        text=f"🥇 Записаться: {gold.name} ({gold.phone})",
+                        callback_data=f"sponsor_sto_{city_key}",
+                    )
+                )
+        except ImportError:
+            pass
+
+    markup.add(
+        InlineKeyboardButton(text="🏪 Все автосервисы",   callback_data="get_services"),
+        InlineKeyboardButton(text="🆘 SOS / Авария",      callback_data="sos_ask"),
         InlineKeyboardButton(text="🏠 Главное меню",       callback_data="main_menu"),
     )
     return markup

@@ -6,6 +6,7 @@ from telebot.types import CallbackQuery, Message
 
 import ai_assistant
 from diagnostic import smart_search, search_by_phrase, format_diagnostic
+from user_history import add_entry, format_history, has_history
 from catalog import find_best_match, find_by_obd, load_parts, load_services
 from config import BOT_TOKEN
 from network import check_telegram, resolve_proxy
@@ -21,6 +22,7 @@ from keyboards import (
     main_reply_keyboard,
     sos_location_keyboard,
     sos_inline_keyboard,
+    after_diagnostic_keyboard,
 )
 from sos_geo import format_sos
 
@@ -123,6 +125,16 @@ def cmd_sos(message: Message) -> None:
 @bot.message_handler(func=lambda m: m.text in ("❓ Справка", "Справка", "/help"))
 def btn_help(message: Message) -> None:
     cmd_help(message)
+
+
+@bot.message_handler(func=lambda m: m.text in ("📋 Моя история", "/history"))
+def btn_history(message: Message) -> None:
+    user_id = message.from_user.id if message.from_user else 0
+    bot.send_message(
+        message.chat.id,
+        format_history(user_id),
+        reply_markup=main_inline_keyboard(PARTS),
+    )
 
 
 @bot.message_handler(func=lambda m: m.text in ("🏪 Автосервисы", "Автосервисы", "/services"))
@@ -310,11 +322,15 @@ def on_text(message: Message) -> None:
     # 2. Умный нечёткий поиск по народным запросам (diagnostic_base.json)
     result, confidence = search_by_phrase(text)
     if result:
+        # Сохраняем в историю пользователя
+        user_id = message.from_user.id if message.from_user else 0
+        add_entry(user_id, text, result["technical_name"], result.get("urgency", "medium"))
+
         answer = format_diagnostic(result, confidence)
         bot.send_message(
             message.chat.id,
             f"<b>🔎 Джек нашёл похожую проблему:</b>\n\n{answer}",
-            reply_markup=main_inline_keyboard(PARTS),
+            reply_markup=after_diagnostic_keyboard(),
             disable_web_page_preview=True,
         )
         return
