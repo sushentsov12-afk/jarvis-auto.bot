@@ -75,6 +75,24 @@ def main_inline_keyboard(parts: list[PartItem], city_key: str = "") -> InlineKey
     return markup
 
 
+def dialog_options_keyboard(options: list[str], tree_id: str) -> InlineKeyboardMarkup:
+    """Кнопки с вариантами ответов в диалоге диагностики."""
+    markup = InlineKeyboardMarkup(row_width=1)
+    for opt in options:
+        # Укорачиваем текст кнопки если длинный
+        btn_text = opt if len(opt) <= 45 else opt[:42] + "..."
+        markup.add(
+            InlineKeyboardButton(
+                text=btn_text,
+                callback_data=f"diag_{tree_id}::{opt[:60]}",
+            )
+        )
+    markup.add(
+        InlineKeyboardButton(text="❌ Отменить диагностику", callback_data="diag_cancel"),
+    )
+    return markup
+
+
 def after_diagnostic_keyboard(city_key: str = "yoshkar_ola") -> InlineKeyboardMarkup:
     """
     Кнопки под результатом диагностики:

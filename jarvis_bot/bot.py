@@ -7,6 +7,8 @@ from telebot.types import CallbackQuery, Message
 import ai_assistant
 from diagnostic import smart_search, search_by_phrase, format_diagnostic
 from user_history import add_entry, format_history, has_history
+from dialog_engine import find_tree, get_node, format_diagnosis, URGENCY_EMOJI
+from dialog_state import set_state, get_state, clear_state, has_state, DialogState
 from catalog import find_best_match, find_by_obd, load_parts, load_services
 from config import BOT_TOKEN
 from network import check_telegram, resolve_proxy
@@ -23,6 +25,7 @@ from keyboards import (
     sos_location_keyboard,
     sos_inline_keyboard,
     after_diagnostic_keyboard,
+    dialog_options_keyboard,
 )
 from sos_geo import format_sos
 
@@ -205,6 +208,93 @@ def on_location(message: Message) -> None:
 # Inline callbacks
 # ──────────────────────────────────────────────
 
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("diag_"))
+def on_dialog_answer(call: CallbackQuery) -> None:
+    """Обрабатывает ответ пользователя в диалоге диагностики."""
+    bot.answer_callback_query(call.id)
+    user_id = call.from_user.id if call.from_user else 0
+    chat_id = call.message.chat.id
+
+    # Отмена диалога
+    if call.data == "diag_cancel":
+        clear_state(user_id)
+        bot.send_message(chat_id, "Диагностика отменена. Чем ещё могу помочь?",
+                         reply_markup=main_inline_keyboard(PARTS))
+        return
+
+    # Разбираем ответ: "diag_{tree_id}::{answer}"
+    try:
+        _, rest = call.data.split("diag_", 1)
+        tree_id, answer = rest.split("::", 1)
+    except ValueError:
+        return
+
+    state = get_state(user_id)
+    if not state or state.tree_id != tree_id:
+        bot.send_message(chat_id, "Сессия диалога устарела. Опишите симптом заново.",
+                         reply_markup=main_inline_keyboard(PARTS))
+        return
+
+    # Найдём текущий узел
+    from dialog_engine import DIALOG_TREES
+    tree = next((t for t in DIALOG_TREES if t.tree_id == tree_id), None)
+    if not tree:
+        clear_state(user_id)
+        return
+
+    node = get_node(tree, state.current_node_id)
+    if not node:
+        clear_state(user_id)
+        return
+
+    state.answers.append(answer)
+
+    # Сначала проверяем финальные диагнозы текущего узла
+    for opt_key, diagnosis in node.diagnoses.items():
+        if answer.startswith(opt_key[:50]):
+            # Финальный диагноз найден
+            clear_state(user_id)
+            add_entry(user_id, " → ".join(state.answers),
+                      diagnosis.title, diagnosis.urgency)
+            text = (
+                f"<b>🔎 Диагноз Джека:</b>\n\n"
+                f"{format_diagnosis(diagnosis)}\n\n"
+                f"<i>Диагностика завершена.</i>"
+            )
+            bot.send_message(chat_id, text,
+                             reply_markup=after_diagnostic_keyboard(),
+                             disable_web_page_preview=True)
+            return
+
+    # Переходим к следующему узлу
+    next_node_id = None
+    for opt_key, nid in node.next_nodes.items():
+        if answer.startswith(opt_key[:50]):
+            next_node_id = nid
+            break
+
+    if not next_node_id:
+        clear_state(user_id)
+        bot.send_message(chat_id, "Не смог обработать ответ. Попробуйте снова.",
+                         reply_markup=main_inline_keyboard(PARTS))
+        return
+
+    next_node = get_node(tree, next_node_id)
+    if not next_node:
+        clear_state(user_id)
+        return
+
+    state.current_node_id = next_node_id
+    set_state(user_id, state)
+
+    hint = f"\n<i>{next_node.hint}</i>" if next_node.hint else ""
+    bot.send_message(
+        chat_id,
+        f"<b>{next_node.question}</b>{hint}",
+        reply_markup=dialog_options_keyboard(next_node.options, tree_id),
+    )
+
+
 @bot.callback_query_handler(func=lambda c: True)
 def on_callback(call: CallbackQuery) -> None:
     bot.answer_callback_query(call.id)
@@ -311,6 +401,21 @@ def on_text(message: Message) -> None:
         return
 
     bot.send_chat_action(message.chat.id, "typing")
+    user_id = message.from_user.id if message.from_user else 0
+
+    # 0. Проверяем — есть ли подходящий диалог для этого симптома
+    tree = find_tree(text)
+    if tree:
+        state = DialogState(tree_id=tree.tree_id, current_node_id=tree.root_node_id)
+        set_state(user_id, state)
+        root_node = get_node(tree, tree.root_node_id)
+        hint = f"\n<i>{root_node.hint}</i>" if root_node and root_node.hint else ""
+        bot.send_message(
+            message.chat.id,
+            f"{tree.intro}\n\n<b>{root_node.question}</b>{hint}",
+            reply_markup=dialog_options_keyboard(root_node.options, tree.tree_id),
+        )
+        return
 
     # 1. Точный поиск по OBD-коду или симптому из старого каталога
     part = find_best_match(text, PARTS)
