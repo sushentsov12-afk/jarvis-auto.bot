@@ -59,7 +59,7 @@ def send_main_menu(
     bot.send_message(
         chat_id,
         "Выберите из меню или введите код OBD / симптом:",
-        reply_markup=main_inline_keyboard(PARTS),
+        reply_markup=main_inline_keyboard(),
     )
 
 
@@ -67,7 +67,7 @@ def reply_with_part(message: Message, part, title: str = "Рекомендаци
     bot.send_message(
         message.chat.id,
         format_part(part, title=title),
-        reply_markup=main_inline_keyboard(PARTS),
+        reply_markup=main_inline_keyboard(),
         disable_web_page_preview=True,
     )
 
@@ -112,7 +112,7 @@ def cmd_services(message: Message) -> None:
     bot.send_message(
         message.chat.id,
         format_services(SERVICES, city_key="yoshkar_ola"),
-        reply_markup=main_inline_keyboard(PARTS, city_key="yoshkar_ola"),
+        reply_markup=main_inline_keyboard(city_key="yoshkar_ola"),
     )
 
 
@@ -136,7 +136,7 @@ def btn_history(message: Message) -> None:
     bot.send_message(
         message.chat.id,
         format_history(user_id),
-        reply_markup=main_inline_keyboard(PARTS),
+        reply_markup=main_inline_keyboard(),
     )
 
 
@@ -156,7 +156,7 @@ def btn_sos_no_geo(message: Message) -> None:
     bot.send_message(
         message.chat.id,
         format_sos(),                    # без координат
-        reply_markup=main_inline_keyboard(PARTS),
+        reply_markup=main_inline_keyboard(),
         disable_web_page_preview=True,
     )
 
@@ -167,7 +167,7 @@ def btn_diagnostics(message: Message) -> None:
         message.chat.id,
         "Введите код OBD (например, <code>P0301</code>) "
         "или опишите симптом (например, <i>стук при торможении</i>):",
-        reply_markup=main_inline_keyboard(PARTS),
+        reply_markup=main_inline_keyboard(),
     )
 
 
@@ -219,7 +219,7 @@ def on_dialog_answer(call: CallbackQuery) -> None:
     if call.data == "diag_cancel":
         clear_state(user_id)
         bot.send_message(chat_id, "Диагностика отменена. Чем ещё могу помочь?",
-                         reply_markup=main_inline_keyboard(PARTS))
+                         reply_markup=main_inline_keyboard())
         return
 
     # Разбираем ответ: "diag_{tree_id}::{answer}"
@@ -232,7 +232,7 @@ def on_dialog_answer(call: CallbackQuery) -> None:
     state = get_state(user_id)
     if not state or state.tree_id != tree_id:
         bot.send_message(chat_id, "Сессия диалога устарела. Опишите симптом заново.",
-                         reply_markup=main_inline_keyboard(PARTS))
+                         reply_markup=main_inline_keyboard())
         return
 
     # Найдём текущий узел
@@ -276,7 +276,7 @@ def on_dialog_answer(call: CallbackQuery) -> None:
     if not next_node_id:
         clear_state(user_id)
         bot.send_message(chat_id, "Не смог обработать ответ. Попробуйте снова.",
-                         reply_markup=main_inline_keyboard(PARTS))
+                         reply_markup=main_inline_keyboard())
         return
 
     next_node = get_node(tree, next_node_id)
@@ -308,7 +308,7 @@ def on_callback(call: CallbackQuery) -> None:
             ),
             call.message.chat.id,
             call.message.message_id,
-            reply_markup=main_inline_keyboard(PARTS),
+            reply_markup=main_inline_keyboard(),
         )
         return
 
@@ -317,7 +317,7 @@ def on_callback(call: CallbackQuery) -> None:
             format_services(SERVICES),
             call.message.chat.id,
             call.message.message_id,
-            reply_markup=main_inline_keyboard(PARTS),
+            reply_markup=main_inline_keyboard(),
         )
         return
 
@@ -341,7 +341,7 @@ def on_callback(call: CallbackQuery) -> None:
         bot.send_message(
             call.message.chat.id,
             text,
-            reply_markup=main_inline_keyboard(PARTS, city_key),
+            reply_markup=main_inline_keyboard(city_key=city_key),
             disable_web_page_preview=True,
         )
         return
@@ -377,7 +377,7 @@ def on_callback(call: CallbackQuery) -> None:
                 f"Информация по коду {code} не найдена.",
                 call.message.chat.id,
                 call.message.message_id,
-                reply_markup=main_inline_keyboard(PARTS),
+                reply_markup=main_inline_keyboard(),
             )
             return
 
@@ -385,7 +385,7 @@ def on_callback(call: CallbackQuery) -> None:
             format_part(part, title=f"Диагностика {part.id}"),
             call.message.chat.id,
             call.message.message_id,
-            reply_markup=main_inline_keyboard(PARTS),
+            reply_markup=main_inline_keyboard(),
             disable_web_page_preview=True,
         )
 
@@ -447,7 +447,7 @@ def on_text(message: Message) -> None:
             bot.send_message(
                 message.chat.id,
                 f"<b>Джек (AI):</b>\n\n{answer}",
-                reply_markup=main_inline_keyboard(PARTS),
+                reply_markup=main_inline_keyboard(),
             )
             return
         except Exception:
@@ -457,7 +457,7 @@ def on_text(message: Message) -> None:
     bot.send_message(
         message.chat.id,
         format_ai_fallback(text),
-        reply_markup=main_inline_keyboard(PARTS),
+        reply_markup=main_inline_keyboard(),
     )
 
 
