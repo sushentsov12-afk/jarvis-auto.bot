@@ -2,25 +2,18 @@ from catalog import PartItem, ServiceItem
 
 
 def welcome_text(first_name: str | None = None, username: str | None = None) -> str:
-    # Формируем обращение: имя если есть, иначе ник, иначе ничего
-    if first_name:
-        address = f"<b>{first_name}</b>"
-    elif username:
-        address = f"<b>@{username}</b>"
-    else:
-        address = None
+    # Обращение только по имени — ник не показываем
+    name_line = f"Привет, <b>{first_name}</b>!\n\n" if first_name else ""
 
-    greeting = (
-        f"Вас приветствует ваш личный помощник <b>Джек</b>.\n\n"
-        f"{'Привет, ' + address + '!' if address else 'Привет!'} "
-        f"{'Ник аккаунта: @' + username if username else ''}\n\n"
-        f"Чем могу помочь?\n\n"
-        f"🔍 <b>Диагностика</b> — введите код OBD или опишите симптом\n"
-        f"🏪 <b>Автосервисы</b> — ближайшие СТО с рейтингом\n"
-        f"🆘 <b>SOS</b> — номера ГИБДД и аварийных комиссаров\n\n"
-        f"Просто напишите проблему — я помогу."
+    return (
+        f"{name_line}"
+        f"<b>Ваша машина говорит. Я перевожу.</b>\n\n"
+        f"Опишите симптом своими словами — стук, запах, лампочка — "
+        f"и я найду причину от простого к сложному.\n\n"
+        f"🔍 <b>Диагностика</b> — опишите симптом или код ошибки\n"
+        f"🏪 <b>Автосервисы</b> — СТО рядом с рейтингом\n"
+        f"🆘 <b>SOS</b> — ГИБДД и комиссары по геолокации"
     )
-    return greeting
 
 
 def help_text(ai_enabled: bool) -> str:
