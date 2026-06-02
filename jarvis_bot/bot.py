@@ -26,23 +26,8 @@ from keyboards import (
     sos_inline_keyboard,
     after_diagnostic_keyboard,
     dialog_options_keyboard,
-    vehicle_brands_keyboard,
-    vehicle_models_keyboard,
-    vehicle_years_keyboard,
 )
 from sos_geo import format_sos
-from vehicle_db import (
-    get_all_brands,
-    get_models_by_brand,
-    get_common_issues,
-    format_vehicle_issues,
-)
-from user_vehicle import (
-    set_user_vehicle,
-    get_user_vehicle,
-    clear_user_vehicle,
-    has_vehicle,
-)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,9 +39,6 @@ PARTS = load_parts()
 SERVICES = load_services()
 
 bot: TeleBot = TeleBot(BOT_TOKEN, parse_mode="HTML")
-
-# Временные переменные для процесса выбора авто
-_vehicle_selection_state: dict[int, dict] = {}
 
 
 # ──────────────────────────────────────────────
@@ -140,51 +122,6 @@ def cmd_sos(message: Message) -> None:
 
 
 # ──────────────────────────────────────────────
-# Vehicle Selection Flow
-# ──────────────────────────────────────────────
-
-@bot.message_handler(func=lambda m: m.text == "🚗 Моё авто")
-def btn_select_vehicle(message: Message) -> None:
-    """Начинаем процесс выбора авто."""
-    user_id = message.from_user.id if message.from_user else 0
-    
-    # Проверяем, уже ли выбрано авто
-    vehicle = get_user_vehicle(user_id)
-    if vehicle:
-        bot.send_message(
-            message.chat.id,
-            f"<b>Ваше авто:</b> {vehicle}\n\n"
-            f"Хотите изменить? Нажмите 🚗 Моё авто или введите новую марку.",
-            reply_markup=main_inline_keyboard(),
-        )
-        return
-    
-    # Начинаем выбор марки
-    brands = get_all_brands()
-    _vehicle_selection_state[user_id] = {"stage": "brand"}
-    
-    bot.send_message(
-        message.chat.id,
-        "<b>🚗 Выбор автомобиля</b>\n\nВыберите марку вашего автомобиля:",
-        reply_markup=vehicle_brands_keyboard(brands),
-    )
-
-
-@bot.message_handler(func=lambda m: m.text == "🔙 Отмена")
-def btn_vehicle_cancel(message: Message) -> None:
-    """Отмена выбора авто."""
-    user_id = message.from_user.id if message.from_user else 0
-    if user_id in _vehicle_selection_state:
-        del _vehicle_selection_state[user_id]
-    
-    bot.send_message(
-        message.chat.id,
-        "Выбор авто отменён.",
-        reply_markup=main_reply_keyboard(),
-    )
-
-
-# ──────────────────────────────────────────────
 # Reply keyboard buttons
 # ──────────────────────────────────────────────
 
@@ -226,133 +163,12 @@ def btn_sos_no_geo(message: Message) -> None:
 
 @bot.message_handler(func=lambda m: m.text in ("🔍 Диагностика", "Коды OBD"))
 def btn_diagnostics(message: Message) -> None:
-    user_id = message.from_user.id if message.from_user else 0
-    vehicle = get_user_vehicle(user_id)
-    
-    if vehicle:
-        msg = (
-            f"<b>Диагностика</b>\n"
-            f"Авто: {vehicle}\n\n"
-            f"Введите код OBD (например, <code>P0301</code>) "
-            f"или опишите симптом (например, <i>стук при торможении</i>):"
-        )
-    else:
-        msg = (
-            "⚠️ Сначала выберите ваше авто (кнопка 🚗 Моё авто), "
-            "чтобы я показал типичные проблемы.\n\n"
-            "Или введите код OBD или симптом:"
-        )
-    
     bot.send_message(
         message.chat.id,
-        msg,
+        "Введите код OBD (например, <code>P0301</code>) "
+        "или опишите симптом (например, <i>стук при торможении</i>):",
         reply_markup=main_inline_keyboard(),
     )
-
-
-# ──────────────────────────────────────────────
-# Vehicle Selection Text Handler
-# ──────────────────────────────────────────────
-
-@bot.message_handler(content_types=["text"], func=lambda m: m.from_user.id in _vehicle_selection_state)
-def on_vehicle_selection_text(message: Message) -> None:
-    """Обработка ввода при выборе авто."""
-    user_id = message.from_user.id if message.from_user else 0
-    text = (message.text or "").strip()
-    
-    if not user_id in _vehicle_selection_state:
-        return
-    
-    state = _vehicle_selection_state[user_id]
-    stage = state.get("stage", "brand")
-    
-    # STAGE 1: Выбор марки
-    if stage == "brand":
-        selected_brand = text
-        models = get_models_by_brand(selected_brand)
-        
-        if not models:
-            bot.send_message(
-                message.chat.id,
-                f"❌ Марка '{selected_brand}' не найдена. Попробуйте ещё раз.",
-                reply_markup=vehicle_brands_keyboard(get_all_brands()),
-            )
-            return
-        
-        state["brand"] = selected_brand
-        state["stage"] = "model"
-        bot.send_message(
-            message.chat.id,
-            f"<b>Марка:</b> {selected_brand}\n\nВыберите модель:",
-            reply_markup=vehicle_models_keyboard(models),
-        )
-        return
-    
-    # STAGE 2: Выбор модели
-    elif stage == "model":
-        # Извлекаем название модели из ответа (формат: "Model (2000-2030)")
-        model_name = text.split(" (")[0].strip()
-        selected_brand = state.get("brand", "")
-        
-        models = get_models_by_brand(selected_brand)
-        matched_model = next((m for m in models if m.get("model", "").lower() == model_name.lower()), None)
-        
-        if not matched_model:
-            bot.send_message(
-                message.chat.id,
-                f"❌ Модель '{model_name}' не найдена. Попробуйте ещё раз.",
-                reply_markup=vehicle_models_keyboard(models),
-            )
-            return
-        
-        state["model"] = matched_model.get("model", "")
-        state["years"] = matched_model.get("years", [2000, 2030])
-        state["stage"] = "year"
-        
-        bot.send_message(
-            message.chat.id,
-            f"<b>Модель:</b> {state['model']}\n\nВыберите год выпуска:",
-            reply_markup=vehicle_years_keyboard(state["years"][0], state["years"][1]),
-        )
-        return
-    
-    # STAGE 3: Выбор года
-    elif stage == "year":
-        try:
-            year = int(text)
-            years_range = state.get("years", [2000, 2030])
-            
-            if not (years_range[0] <= year <= years_range[1]):
-                bot.send_message(
-                    message.chat.id,
-                    f"❌ Год должен быть от {years_range[0]} до {years_range[1]}.",
-                    reply_markup=vehicle_years_keyboard(years_range[0], years_range[1]),
-                )
-                return
-            
-            # Сохраняем авто
-            brand = state.get("brand", "")
-            model = state.get("model", "")
-            vehicle = set_user_vehicle(user_id, brand, model, year)
-            
-            # Показываем типичные ошибки
-            issues_text = format_vehicle_issues(brand, model, year)
-            
-            del _vehicle_selection_state[user_id]
-            
-            bot.send_message(
-                message.chat.id,
-                f"<b>✅ Ваше авто сохранено:</b>\n{vehicle}\n\n{issues_text}",
-                reply_markup=main_reply_keyboard(),
-                disable_web_page_preview=True,
-            )
-            
-        except ValueError:
-            bot.send_message(
-                message.chat.id,
-                "❌ Пожалуйста, введите год числом (например, 2020).",
-                reply_markup=vehicle_years_keyboard(state.get("years", [2000, 2030])[0], state.get("years", [2000, 2030])[1]),
-            )
 
 
 # ──────────────────────────────────────────────
