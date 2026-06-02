@@ -1,0 +1,180 @@
+[
+  {
+    "category": "engine",
+    "symptom": "Двигатель троит",
+    "causes": [
+      "Неисправная свеча зажигания",
+      "Катушка зажигания",
+      "Подсос воздуха",
+      "Форсунка"
+    ],
+    "danger_level": "medium",
+    "can_drive": false,
+    "cost_range": "50–300€",
+    "what_to_do": "Проверить свечи, катушки, ошибки OBD. При сильной вибрации — не ехать.",
+    "prevention": "Менять свечи каждые 30–40 тыс. км, использовать качественное топливо."
+  },
+  {
+    "category": "engine",
+    "symptom": "Горит Check Engine",
+    "causes": [
+      "Ошибка по смеси",
+      "Катализатор",
+      "Лямбда-зонд",
+      "EVAP"
+    ],
+    "danger_level": "medium",
+    "can_drive": true,
+    "cost_range": "0–600€",
+    "what_to_do": "Считать ошибки OBD. Если мигает — остановиться.",
+    "prevention": "Регулярная диагностика, качественное топливо."
+  },
+  {
+    "category": "cooling",
+    "symptom": "Перегрев двигателя",
+    "causes": [
+      "Неисправный термостат",
+      "Не работает вентилятор",
+      "Утечка антифриза",
+      "Помпа"
+    ],
+    "danger_level": "high",
+    "can_drive": false,
+    "cost_range": "80–400€",
+    "what_to_do": "Остановиться, дать остыть, проверить уровень антифриза.",
+    "prevention": "Менять антифриз каждые 2–3 года."
+  },
+  {
+    "category": "transmission",
+    "symptom": "Пинки АКПП",
+    "causes": [
+      "Низкий уровень масла",
+      "Грязное масло",
+      "Износ соленоидов",
+      "Износ фрикционов"
+    ],
+    "danger_level": "medium",
+    "can_drive": true,
+    "cost_range": "150–1500€",
+    "what_to_do": "Проверить уровень ATF, сделать адаптацию.",
+    "prevention": "Менять масло каждые 50–60 тыс. км."
+  },
+  {
+    "category": "suspension",
+    "symptom": "Стук в подвеске",
+    "causes": [
+      "Сайлентблоки",
+      "Стойки стабилизатора",
+      "Амортизаторы",
+      "Опорные подшипники"
+    ],
+    "danger_level": "low",
+    "can_drive": true,
+    "cost_range": "30–400€",
+    "what_to_do": "Осмотр подвески на подъёмнике.",
+    "prevention": "Избегать ям, делать развал-схождение."
+  },
+  {
+    "category": "brakes",
+    "symptom": "Скрип тормозов",
+    "causes": [
+      "Износ колодок",
+      "Грязь",
+      "Неоригинальные колодки",
+      "Износ дисков"
+    ],
+    "danger_level": "medium",
+    "can_drive": true,
+    "cost_range": "40–300€",
+    "what_to_do": "Проверить толщину колодок и дисков.",
+    "prevention": "Использовать качественные колодки."
+  },
+  {
+    "category": "electrical",
+    "symptom": "Аккумулятор быстро разряжается",
+    "causes": [
+      "Старый аккумулятор",
+      "Утечка тока",
+      "Неисправный генератор"
+    ],
+    "danger_level": "medium",
+    "can_drive": true,
+    "cost_range": "80–400€",
+    "what_to_do": "Проверить заряд генератора и утечки.",
+    "prevention": "Менять АКБ каждые 4–5 лет."
+  },
+  {
+    "category": "ev",
+    "symptom": "Падение запаса хода (EV)",
+    "causes": [
+      "Износ батареи",
+      "Холодная погода",
+      "Неисправность BMS"
+    ],
+    "danger_level": "low",
+    "can_drive": true,
+    "cost_range": "0–3000€",
+    "what_to_do": "Проверить SOH батареи.",
+    "prevention": "Не заряжать до 100% ежедневно."
+  },
+  {
+    "category": "brand_specific",
+    "brand": "Volkswagen",
+    "symptom": "Ошибка EPC",
+    "causes": [
+      "Дроссельная заслонка",
+      "Катушка зажигания",
+      "Проблемы с топливной системой"
+    ],
+    "danger_level": "medium",
+    "can_drive": false,
+    "cost_range": "50–400€",
+    "what_to_do": "Считать ошибки, проверить дроссель.",
+    "prevention": "Чистить дроссель каждые 40 тыс. км."
+  },
+  {
+    "category": "brand_specific",
+    "brand": "BMW",
+    "symptom": "Повышенный расход масла",
+    "causes": [
+      "Износ маслосъёмных колец",
+      "Вентиляция картера (КВКГ)",
+      "Турбина"
+    ],
+    "danger_level": "medium",
+    "can_drive": true,
+    "cost_range": "200–2000€",
+    "what_to_do": "Диагностика КВКГ, эндоскопия цилиндров.",
+    "prevention": "Менять масло каждые 7–10 тыс. км."
+  },
+  {
+    "category": "brand_specific",
+    "brand": "Mercedes-Benz",
+    "symptom": "Ошибка AdBlue",
+    "causes": [
+      "Насос AdBlue",
+      "Кристаллизация",
+      "Датчик NOx"
+    ],
+    "danger_level": "high",
+    "can_drive": false,
+    "cost_range": "300–1500€",
+    "what_to_do": "Проверить систему SCR.",
+    "prevention": "Использовать качественный AdBlue."
+  },
+  {
+    "category": "brand_specific",
+    "brand": "Toyota",
+    "symptom": "Шум вариатора (CVT)",
+    "causes": [
+      "Износ ремня",
+      "Грязное масло",
+      "Износ подшипников"
+    ],
+    "danger_level": "medium",
+    "can_drive": true,
+    "cost_range": "150–1200€",
+    "what_to_do": "Проверить уровень CVT‑масла.",
+    "prevention": "Менять масло каждые 40–50 тыс. км."
+  }
+]
