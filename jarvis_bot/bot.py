@@ -43,14 +43,6 @@ from user_vehicle import (
     clear_user_vehicle,
     has_vehicle,
 )
-from version_manager import (
-    get_current_version,
-    get_user_version,
-    set_user_version,
-    needs_update_notification,
-    get_update_message,
-    get_version_string,
-)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -110,18 +102,6 @@ def ask_for_location(chat_id: int) -> None:
     )
 
 
-def check_and_notify_update(user_id: int, chat_id: int) -> None:
-    """Проверяет, нужно ли отправить уведомление об обновлении."""
-    if needs_update_notification(user_id):
-        bot.send_message(
-            chat_id,
-            get_update_message(),
-            reply_markup=main_reply_keyboard(),
-        )
-        # Обновляем версию пользователя
-        set_user_version(user_id, get_current_version())
-
-
 # ──────────────────────────────────────────────
 # Commands
 # ──────────────────────────────────────────────
@@ -129,14 +109,6 @@ def check_and_notify_update(user_id: int, chat_id: int) -> None:
 @bot.message_handler(commands=["start"])
 def cmd_start(message: Message) -> None:
     user = message.from_user
-    user_id = user.id if user else 0
-    
-    # Проверяем обновления
-    check_and_notify_update(user_id, message.chat.id)
-    
-    # Обновляем версию пользователя при старте
-    set_user_version(user_id, get_current_version())
-    
     send_main_menu(
         message.chat.id,
         first_name=user.first_name if user else None,
@@ -175,9 +147,6 @@ def cmd_sos(message: Message) -> None:
 def btn_select_vehicle(message: Message) -> None:
     """Начинаем процесс выбора авто."""
     user_id = message.from_user.id if message.from_user else 0
-    
-    # Проверяем обновления (если первый раз после обновления)
-    check_and_notify_update(user_id, message.chat.id)
     
     # Проверяем, уже ли выбрано авто
     vehicle = get_user_vehicle(user_id)
@@ -227,10 +196,6 @@ def btn_help(message: Message) -> None:
 @bot.message_handler(func=lambda m: m.text in ("📋 Моя история", "/history"))
 def btn_history(message: Message) -> None:
     user_id = message.from_user.id if message.from_user else 0
-    
-    # Проверяем обновления
-    check_and_notify_update(user_id, message.chat.id)
-    
     bot.send_message(
         message.chat.id,
         format_history(user_id),
@@ -262,10 +227,6 @@ def btn_sos_no_geo(message: Message) -> None:
 @bot.message_handler(func=lambda m: m.text in ("🔍 Диагностика", "Коды OBD"))
 def btn_diagnostics(message: Message) -> None:
     user_id = message.from_user.id if message.from_user else 0
-    
-    # Проверяем обновления
-    check_and_notify_update(user_id, message.chat.id)
-    
     vehicle = get_user_vehicle(user_id)
     
     if vehicle:
@@ -458,7 +419,7 @@ def on_dialog_answer(call: CallbackQuery) -> None:
                          reply_markup=main_inline_keyboard())
         return
 
-    # Найдём ��екущий узел
+    # Найдём текущий узел
     from dialog_engine import DIALOG_TREES
     tree = next((t for t in DIALOG_TREES if t.tree_id == tree_id), None)
     if not tree:
@@ -701,8 +662,7 @@ def main() -> None:
         sys.exit(1)
 
     logger.info(
-        "Jarvis Auto started (%s | AI: %s)",
-        get_version_string(),
+        "Jarvis Auto started (AI: %s)",
         "on" if ai_assistant.is_enabled() else "off",
     )
     bot.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)
