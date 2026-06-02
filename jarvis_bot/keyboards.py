@@ -11,17 +11,18 @@ WEB_APP_URL = "https://jarvis-auto-psi.vercel.app"
 
 
 def main_reply_keyboard() -> ReplyKeyboardMarkup:
-    """Главная клавиатура — 5 кнопок."""
+    """Главная клавиатура — 6 кнопок."""
     kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     kb.add(
+        KeyboardButton("🚗 Моё авто"),
         KeyboardButton("🔍 Диагностика"),
+    )
+    kb.add(
         KeyboardButton("🏪 Автосервисы"),
-    )
-    kb.add(
         KeyboardButton("🆘 SOS"),
-        KeyboardButton("📋 Моя история"),
     )
     kb.add(
+        KeyboardButton("📋 Моя история"),
         KeyboardButton("❓ Справка"),
     )
     return kb
@@ -32,6 +33,51 @@ def sos_location_keyboard() -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1, one_time_keyboard=True)
     kb.add(KeyboardButton("📍 Отправить моё местоположение", request_location=True))
     kb.add(KeyboardButton("🔙 Без геолокации (федеральные номера)"))
+    return kb
+
+
+def vehicle_brands_keyboard(brands: list[str]) -> ReplyKeyboardMarkup:
+    """Выбор марки авто."""
+    kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, one_time_keyboard=True)
+    
+    # Добавляем бренды по 2 в ряд
+    for i in range(0, len(brands), 2):
+        if i + 1 < len(brands):
+            kb.add(
+                KeyboardButton(brands[i]),
+                KeyboardButton(brands[i + 1])
+            )
+        else:
+            kb.add(KeyboardButton(brands[i]))
+    
+    kb.add(KeyboardButton("🔙 Отмена"))
+    return kb
+
+
+def vehicle_models_keyboard(models: list[dict]) -> ReplyKeyboardMarkup:
+    """Выбор модели авто."""
+    kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1, one_time_keyboard=True)
+    
+    for model in models:
+        kb.add(KeyboardButton(f"{model.get('model', '')} ({model.get('years', [2000, 2030])[0]}-{model.get('years', [2000, 2030])[1]})"))
+    
+    kb.add(KeyboardButton("🔙 Отмена"))
+    return kb
+
+
+def vehicle_years_keyboard(start_year: int, end_year: int) -> ReplyKeyboardMarkup:
+    """Выбор года выпуска авто."""
+    kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=3, one_time_keyboard=True)
+    
+    # Показываем последние 15 лет с шагом 1
+    current_year = min(2026, end_year)
+    years = list(range(current_year, max(start_year - 1, current_year - 15), -1))
+    
+    for i in range(0, len(years), 3):
+        row_years = years[i:i+3]
+        kb.add(*[KeyboardButton(str(y)) for y in row_years])
+    
+    kb.add(KeyboardButton("🔙 Отмена"))
     return kb
 
 
