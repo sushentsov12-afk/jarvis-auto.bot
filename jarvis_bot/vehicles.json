@@ -1,0 +1,42 @@
+[
+  {
+    "brand": "Toyota",
+    "models": [
+      {"name": "Camry", "years": "2005-2024", "engines": ["2.4", "2.5", "3.5"]},
+      {"name": "Corolla", "years": "2000-2024", "engines": ["1.4", "1.6", "1.8"]},
+      {"name": "RAV4", "years": "2006-2024", "engines": ["2.0", "2.5"]}
+    ]
+  },
+  {
+    "brand": "Volkswagen",
+    "models": [
+      {"name": "Golf", "years": "2000-2024", "engines": ["1.4 TSI", "1.6", "2.0 TDI"]},
+      {"name": "Passat", "years": "2005-2024", "engines": ["1.8 TSI", "2.0 TSI", "2.0 TDI"]},
+      {"name": "Tiguan", "years": "2008-2024", "engines": ["1.4 TSI", "2.0 TSI"]}
+    ]
+  },
+  {
+    "brand": "BMW",
+    "models": [
+      {"name": "3 Series", "years": "2005-2024", "engines": ["2.0", "2.5", "3.0"]},
+      {"name": "5 Series", "years": "2005-2024", "engines": ["2.0", "3.0"]},
+      {"name": "X5", "years": "2007-2024", "engines": ["3.0", "4.4"]}
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "models": [
+      {"name": "C-Class", "years": "2005-2024", "engines": ["1.8", "2.0", "3.0"]},
+      {"name": "E-Class", "years": "2005-2024", "engines": ["2.0", "3.0"]},
+      {"name": "GLC", "years": "2015-2024", "engines": ["2.0"]}
+    ]
+  },
+  {
+    "brand": "Hyundai",
+    "models": [
+      {"name": "Elantra", "years": "2005-2024", "engines": ["1.6", "2.0"]},
+      {"name": "Tucson", "years": "2005-2024", "engines": ["2.0", "2.4"]},
+      {"name": "Santa Fe", "years": "2006-2024", "engines": ["2.2", "2.4", "3.5"]}
+    ]
+  }
+]
