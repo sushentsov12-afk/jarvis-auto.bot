@@ -2,41 +2,204 @@
   {
     "brand": "Toyota",
     "models": [
-      {"name": "Camry", "years": "2005-2024", "engines": ["2.4", "2.5", "3.5"]},
-      {"name": "Corolla", "years": "2000-2024", "engines": ["1.4", "1.6", "1.8"]},
-      {"name": "RAV4", "years": "2006-2024", "engines": ["2.0", "2.5"]}
-    ]
-  },
-  {
-    "brand": "Volkswagen",
-    "models": [
-      {"name": "Golf", "years": "2000-2024", "engines": ["1.4 TSI", "1.6", "2.0 TDI"]},
-      {"name": "Passat", "years": "2005-2024", "engines": ["1.8 TSI", "2.0 TSI", "2.0 TDI"]},
-      {"name": "Tiguan", "years": "2008-2024", "engines": ["1.4 TSI", "2.0 TSI"]}
+      {"name": "Camry", "years": "1990-2026"},
+      {"name": "Corolla", "years": "1990-2026"},
+      {"name": "RAV4", "years": "1994-2026"},
+      {"name": "Land Cruiser 80", "years": "1990-1997"},
+      {"name": "Land Cruiser 100", "years": "1998-2007"},
+      {"name": "Land Cruiser 200", "years": "2008-2021"},
+      {"name": "Land Cruiser 300", "years": "2021-2026"},
+      {"name": "Prius", "years": "1997-2026"},
+      {"name": "Hilux", "years": "1990-2026"},
+      {"name": "Yaris", "years": "1999-2026"},
+      {"name": "Supra", "years": "1993-2026"},
+      {"name": "bZ4X", "years": "2022-2026", "type": "EV"}
     ]
   },
   {
     "brand": "BMW",
     "models": [
-      {"name": "3 Series", "years": "2005-2024", "engines": ["2.0", "2.5", "3.0"]},
-      {"name": "5 Series", "years": "2005-2024", "engines": ["2.0", "3.0"]},
-      {"name": "X5", "years": "2007-2024", "engines": ["3.0", "4.4"]}
+      {"name": "3 Series (E36/E46/E90/F30/G20)", "years": "1990-2026"},
+      {"name": "5 Series", "years": "1990-2026"},
+      {"name": "7 Series", "years": "1990-2026"},
+      {"name": "X3", "years": "2003-2026"},
+      {"name": "X5", "years": "1999-2026"},
+      {"name": "X7", "years": "2018-2026"},
+      {"name": "M3", "years": "1992-2026"},
+      {"name": "M5", "years": "1985-2026"},
+      {"name": "i4", "years": "2021-2026", "type": "EV"},
+      {"name": "iX", "years": "2021-2026", "type": "EV"}
     ]
   },
   {
     "brand": "Mercedes-Benz",
     "models": [
-      {"name": "C-Class", "years": "2005-2024", "engines": ["1.8", "2.0", "3.0"]},
-      {"name": "E-Class", "years": "2005-2024", "engines": ["2.0", "3.0"]},
-      {"name": "GLC", "years": "2015-2024", "engines": ["2.0"]}
+      {"name": "C-Class", "years": "1990-2026"},
+      {"name": "E-Class", "years": "1990-2026"},
+      {"name": "S-Class", "years": "1990-2026"},
+      {"name": "G-Class", "years": "1990-2026"},
+      {"name": "GLE (ML)", "years": "1997-2026"},
+      {"name": "GLC", "years": "2015-2026"},
+      {"name": "CLA", "years": "2013-2026"},
+      {"name": "EQS", "years": "2021-2026", "type": "EV"},
+      {"name": "EQE", "years": "2022-2026", "type": "EV"}
+    ]
+  },
+  {
+    "brand": "Audi",
+    "models": [
+      {"name": "A3", "years": "1996-2026"},
+      {"name": "A4", "years": "1994-2026"},
+      {"name": "A6", "years": "1994-2026"},
+      {"name": "A8", "years": "1994-2026"},
+      {"name": "Q3", "years": "2011-2026"},
+      {"name": "Q5", "years": "2008-2026"},
+      {"name": "Q7", "years": "2005-2026"},
+      {"name": "Q8", "years": "2018-2026"},
+      {"name": "TT", "years": "1998-2023"},
+      {"name": "e-tron", "years": "2019-2026", "type": "EV"}
+    ]
+  },
+  {
+    "brand": "Volkswagen",
+    "models": [
+      {"name": "Golf (Mk3–Mk8)", "years": "1990-2026"},
+      {"name": "Passat", "years": "1990-2026"},
+      {"name": "Polo", "years": "1990-2026"},
+      {"name": "Tiguan", "years": "2007-2026"},
+      {"name": "Touareg", "years": "2002-2026"},
+      {"name": "Jetta", "years": "1990-2026"},
+      {"name": "ID.3", "years": "2020-2026", "type": "EV"},
+      {"name": "ID.4", "years": "2020-2026", "type": "EV"},
+      {"name": "ID.6", "years": "2021-2026", "type": "EV"}
     ]
   },
   {
     "brand": "Hyundai",
     "models": [
-      {"name": "Elantra", "years": "2005-2024", "engines": ["1.6", "2.0"]},
-      {"name": "Tucson", "years": "2005-2024", "engines": ["2.0", "2.4"]},
-      {"name": "Santa Fe", "years": "2006-2024", "engines": ["2.2", "2.4", "3.5"]}
+      {"name": "Accent", "years": "1994-2026"},
+      {"name": "Elantra", "years": "1990-2026"},
+      {"name": "Sonata", "years": "1985-2026"},
+      {"name": "Tucson", "years": "2004-2026"},
+      {"name": "Santa Fe", "years": "2000-2026"},
+      {"name": "Creta", "years": "2014-2026"},
+      {"name": "Palisade", "years": "2018-2026"},
+      {"name": "Ioniq 5", "years": "2021-2026", "type": "EV"},
+      {"name": "Ioniq 6", "years": "2022-2026", "type": "EV"}
+    ]
+  },
+  {
+    "brand": "Kia",
+    "models": [
+      {"name": "Rio", "years": "1999-2026"},
+      {"name": "Ceed", "years": "2006-2026"},
+      {"name": "Cerato", "years": "2003-2026"},
+      {"name": "Optima / K5", "years": "2000-2026"},
+      {"name": "Sportage", "years": "1993-2026"},
+      {"name": "Sorento", "years": "2002-2026"},
+      {"name": "Carnival", "years": "1998-2026"},
+      {"name": "EV6", "years": "2021-2026", "type": "EV"},
+      {"name": "EV9", "years": "2023-2026", "type": "EV"}
+    ]
+  },
+  {
+    "brand": "Nissan",
+    "models": [
+      {"name": "Almera", "years": "1995-2026"},
+      {"name": "Primera", "years": "1990-2007"},
+      {"name": "Maxima", "years": "1990-2026"},
+      {"name": "Qashqai", "years": "2006-2026"},
+      {"name": "X-Trail", "years": "2000-2026"},
+      {"name": "Patrol", "years": "1990-2026"},
+      {"name": "Juke", "years": "2010-2026"},
+      {"name": "Leaf", "years": "2010-2026", "type": "EV"},
+      {"name": "Ariya", "years": "2022-2026", "type": "EV"}
+    ]
+  },
+  {
+    "brand": "Honda",
+    "models": [
+      {"name": "Civic", "years": "1990-2026"},
+      {"name": "Accord", "years": "1990-2026"},
+      {"name": "CR-V", "years": "1995-2026"},
+      {"name": "HR-V", "years": "1998-2026"},
+      {"name": "Pilot", "years": "2002-2026"},
+      {"name": "Fit / Jazz", "years": "2001-2026"},
+      {"name": "NSX", "years": "1990-2022"}
+    ]
+  },
+  {
+    "brand": "Ford",
+    "models": [
+      {"name": "Focus", "years": "1998-2026"},
+      {"name": "Mondeo", "years": "1993-2022"},
+      {"name": "Fiesta", "years": "1990-2023"},
+      {"name": "Mustang", "years": "1990-2026"},
+      {"name": "Explorer", "years": "1990-2026"},
+      {"name": "F-150", "years": "1990-2026"},
+      {"name": "Kuga", "years": "2008-2026"},
+      {"name": "Mustang Mach-E", "years": "2021-2026", "type": "EV"}
+    ]
+  },
+  {
+    "brand": "Lada",
+    "models": [
+      {"name": "2110", "years": "1995-2007"},
+      {"name": "Priora", "years": "2007-2018"},
+      {"name": "Kalina", "years": "2004-2018"},
+      {"name": "Granta", "years": "2011-2026"},
+      {"name": "Vesta", "years": "2015-2026"},
+      {"name": "Niva Legend", "years": "1990-2026"},
+      {"name": "Niva Travel", "years": "2021-2026"},
+      {"name": "Iskra", "years": "2025-2026"}
+    ]
+  },
+  {
+    "brand": "Geely",
+    "models": [
+      {"name": "Coolray", "years": "2018-2026"},
+      {"name": "Atlas", "years": "2016-2026"},
+      {"name": "Monjaro", "years": "2021-2026"},
+      {"name": "Tugella", "years": "2020-2026"},
+      {"name": "Emgrand", "years": "1998-2026"},
+      {"name": "Geometry", "years": "2019-2026", "type": "EV"},
+      {"name": "Preface", "years": "2020-2026"}
+    ]
+  },
+  {
+    "brand": "Chery",
+    "models": [
+      {"name": "Tiggo 3", "years": "2005-2026"},
+      {"name": "Tiggo 4", "years": "2017-2026"},
+      {"name": "Tiggo 7", "years": "2016-2026"},
+      {"name": "Tiggo 8", "years": "2018-2026"},
+      {"name": "Arrizo 7", "years": "2013-2026"},
+      {"name": "Arrizo 8", "years": "2022-2026"},
+      {"name": "Omoda C5", "years": "2022-2026"},
+      {"name": "Jaecoo J7", "years": "2023-2026"}
+    ]
+  },
+  {
+    "brand": "BYD",
+    "models": [
+      {"name": "F3", "years": "2005-2026"},
+      {"name": "Qin", "years": "2012-2026"},
+      {"name": "Han", "years": "2020-2026"},
+      {"name": "Tang", "years": "2015-2026"},
+      {"name": "Song", "years": "2015-2026"},
+      {"name": "Seagull", "years": "2023-2026", "type": "EV"},
+      {"name": "Dolphin", "years": "2021-2026", "type": "EV"},
+      {"name": "Yangwang U8", "years": "2023-2026"}
+    ]
+  },
+  {
+    "brand": "Tesla",
+    "models": [
+      {"name": "Model S", "years": "2012-2026", "type": "EV"},
+      {"name": "Model X", "years": "2015-2026", "type": "EV"},
+      {"name": "Model 3", "years": "2017-2026", "type": "EV"},
+      {"name": "Model Y", "years": "2020-2026", "type": "EV"},
+      {"name": "Cybertruck", "years": "2023-2026", "type": "EV"}
     ]
   }
 ]
