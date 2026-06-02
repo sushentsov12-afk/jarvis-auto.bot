@@ -126,6 +126,14 @@ def format_diagnostic(item: dict, confidence: int | None = None) -> str:
     price = item.get("price_range", "")
     price_line = f"<b>💰 Примерная стоимость:</b> {price}\n" if price else ""
 
+    # Образовательный блок
+    lesson  = item.get("lesson", "")
+    diy     = item.get("diy", "")
+    warning = item.get("warning", "")
+    lesson_line  = f"\n\n📖 <b>Полезно знать:</b>\n<i>{lesson}</i>" if lesson else ""
+    diy_line     = f"\n\n🛠 <b>Можно сделать самому:</b>\n{diy}" if diy else ""
+    warning_line = f"\n\n⚡ <b>Запомните на будущее:</b>\n<i>{warning}</i>" if warning else ""
+
     return (
         f"{emoji} <b>{item['technical_name']}</b>\n"
         f"<i>{label}</i>\n\n"
@@ -133,7 +141,11 @@ def format_diagnostic(item: dict, confidence: int | None = None) -> str:
         f"{obd_line}"
         f"<b>📋 Что происходит:</b>\n{item['ru_description']}\n\n"
         f"<b>🔍 Вероятная причина:</b>\n{item['probable_cause']}\n\n"
-        f"<b>🔧 Что нужно сделать:</b>\n{item['action_required']}\n\n"
-        f"{price_line}"
-        f"<i>Для точной диагностики обратитесь на СТО или уточните код OBD.</i>"
+        f"<b>🔧 Что нужно сделать:</b>\n{item['action_required']}"
+        f"\n\n<b>💰 Примерная стоимость:</b> {price}" if price else ""
+    ) + (
+        f"{lesson_line}"
+        f"{diy_line}"
+        f"{warning_line}"
+        f"\n\n<i>Уточните код OBD или обратитесь на СТО для точной диагностики.</i>"
     )
