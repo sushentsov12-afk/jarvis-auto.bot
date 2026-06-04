@@ -383,3 +383,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+bot.polling(none_stop=True)
