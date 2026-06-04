@@ -383,3 +383,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+print("BOT STARTED")
+
+if __name__ == "__main__":
+    bot.polling(none_stop=True, interval=0)
