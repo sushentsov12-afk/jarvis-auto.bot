@@ -1,1 +1,0 @@
-web: python jarvis_bot/bot_improved.py
