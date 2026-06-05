@@ -2,7 +2,7 @@ import logging
 
 from gigachat import GigaChat
 
-from config import GIGACHAT_CREDENTIALS, GIGACHAT_VERIFY_SSL
+from .config import GIGACHAT_CREDENTIALS, GIGACHAT_VERIFY_SSL
 
 logger = logging.getLogger(__name__)
 

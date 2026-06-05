@@ -2,7 +2,7 @@
 dialog_state.py — хранилище состояний диалогов пользователей.
 """
 from __future__ import annotations
-from dialog_engine import DialogState
+from .dialog_engine import DialogState
 
 # user_id → активный DialogState
 _STATES: dict[int, DialogState] = {}

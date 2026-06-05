@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from config import DATA_DIR, BASE_DIR
+from .config import DATA_DIR, BASE_DIR
 
 CURRENT_VERSION_FILE = BASE_DIR / "VERSION"
 USER_VERSIONS_FILE = DATA_DIR / "user_versions.json"
