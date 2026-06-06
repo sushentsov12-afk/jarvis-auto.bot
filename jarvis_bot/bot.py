@@ -38,11 +38,44 @@ bot = TeleBot(BOT_TOKEN, parse_mode="HTML")
 @bot.message_handler(commands=["start"])
 def cmd_start(message: Message) -> None:
     user = message.from_user
+    if user:
+        from broadcaster import register_user
+        register_user(user.id, username=user.username or "", first_name=user.first_name or "")
     bot.send_message(
         message.chat.id,
         welcome_text(first_name=user.first_name if user else None),
         reply_markup=main_reply_keyboard(),
     )
+
+@bot.message_handler(commands=["broadcast"])
+def cmd_broadcast(message: Message) -> None:
+    import os
+    admin_id = str(os.getenv("ADMIN_ID", ""))
+    user_id = str(message.from_user.id) if message.from_user else ""
+    if not admin_id or user_id != admin_id:
+        return
+    text = message.text.replace("/broadcast", "", 1).strip()
+    if not text:
+        bot.send_message(message.chat.id, "Укажи текст: /broadcast Текст")
+        return
+    bot.send_message(message.chat.id, "Начинаю рассылку...")
+    from broadcaster import broadcast, get_user_count
+    result = broadcast(bot, text)
+    bot.send_message(message.chat.id,
+        f"Рассылка завершена!\n"
+        f"Пользователей: {get_user_count()}\n"
+        f"Отправлено: {result['sent']}\n"
+        f"Ошибок: {result['failed']}")
+
+@bot.message_handler(commands=["stats"])
+def cmd_stats(message: Message) -> None:
+    import os
+    admin_id = str(os.getenv("ADMIN_ID", ""))
+    user_id = str(message.from_user.id) if message.from_user else ""
+    if not admin_id or user_id != admin_id:
+        return
+    from broadcaster import get_user_count
+    bot.send_message(message.chat.id, f"Пользователей: {get_user_count()}")
 
 @bot.message_handler(func=lambda m: m.text == "🏠 Главное меню")
 def go_main_menu(message: Message) -> None:
