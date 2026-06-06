@@ -166,11 +166,8 @@ def show_typical_issues(message: Message) -> None:
     if not car:
         bot.send_message(message.chat.id, "Сначала выберите авто в меню 🚗 Моё авто", reply_markup=my_car_menu_keyboard(False))
         return
-    issues = [
-        type('I', (), {'name': 'Пропуски зажигания', 'urgency': 'high', 'description': 'Свечи или катушка зажигания', 'price_range': '500–3000 руб'})(),
-        type('I', (), {'name': 'Check Engine', 'urgency': 'medium', 'description': 'Датчик кислорода или лямбда-зонд', 'price_range': '1500–6000 руб'})(),
-        type('I', (), {'name': 'Стук при торможении', 'urgency': 'high', 'description': 'Тормозные колодки или диски', 'price_range': '2000–8000 руб'})(),
-    ]
+    from vehicle_db import get_typical_issues
+    issues = get_typical_issues(car['brand'], car['model'])
     bot.send_message(message.chat.id, format_typical_issues(car['brand'], car['model'], car['year'], issues), reply_markup=back_to_menu_keyboard())
 
 
