@@ -4,7 +4,7 @@ import urllib.request
 import requests
 from requests.exceptions import RequestException
 
-from .config import BOT_TOKEN, TELEGRAM_PROXY
+from config import BOT_TOKEN, TELEGRAM_PROXY
 
 logger = logging.getLogger(__name__)
 

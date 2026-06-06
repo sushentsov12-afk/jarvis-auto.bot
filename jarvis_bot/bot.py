@@ -3,26 +3,26 @@ import sys
 from telebot import TeleBot, apihelper
 from telebot.types import CallbackQuery, Message
 
-from . import ai_assistant
-from .diagnostic import smart_search, search_by_phrase, format_diagnostic
-from .user_history import add_entry, format_history, has_history
-from .dialog_engine import find_tree, get_node, format_diagnosis, URGENCY_EMOJI
-from .dialog_state import set_state, get_state, clear_state, has_state, DialogState
-from .catalog import find_best_match, find_by_obd, load_parts, load_services
-from .config import BOT_TOKEN
-from .network import check_telegram, resolve_proxy
-from .user_vehicle import user_vehicle
-from .formatters import (
+import ai_assistant
+from diagnostic import smart_search, search_by_phrase, format_diagnostic
+from user_history import add_entry, format_history, has_history
+from dialog_engine import find_tree, get_node, format_diagnosis, URGENCY_EMOJI
+from dialog_state import set_state, get_state, clear_state, has_state, DialogState
+from catalog import find_best_match, find_by_obd, load_parts, load_services
+from config import BOT_TOKEN
+from network import check_telegram, resolve_proxy
+from user_vehicle import user_vehicle
+from formatters import (
     format_ai_fallback, format_part, format_services, help_text, 
     welcome_text, format_my_car, format_diagnostic_start, format_typical_issues
 )
-from .keyboards import (
+from keyboards import (
     main_reply_keyboard, back_to_menu_keyboard, diagnostic_menu_keyboard,
     brand_keyboard, model_keyboard, year_keyboard, my_car_menu_keyboard,
     confirm_vehicle_keyboard, main_inline_keyboard, sos_location_keyboard,
     sos_inline_keyboard, after_diagnostic_keyboard, dialog_options_keyboard
 )
-from .sos_geo import format_sos
+from sos_geo import format_sos
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("jarvis")

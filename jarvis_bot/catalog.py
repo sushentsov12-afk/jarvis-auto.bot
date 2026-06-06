@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from .config import DATA_DIR
+from config import DATA_DIR
 
 OBD_PATTERN = re.compile(r"\bP\d{4}\b", re.IGNORECASE)
 

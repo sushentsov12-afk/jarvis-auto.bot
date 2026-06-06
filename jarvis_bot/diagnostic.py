@@ -13,7 +13,7 @@ from typing import Optional
 
 from rapidfuzz import fuzz
 
-from .config import DATA_DIR
+from config import DATA_DIR
 
 # ─────────────────────────────────────────────────────────────────
 # Загрузка базы

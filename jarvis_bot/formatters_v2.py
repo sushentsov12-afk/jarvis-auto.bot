@@ -1,4 +1,4 @@
-from .catalog import PartItem, ServiceItem
+from catalog import PartItem, ServiceItem
 
 
 def welcome_text(first_name: str | None = None, username: str | None = None) -> str:
