@@ -1,22 +1,170 @@
 {
-  "toyota_camry": {"brand": "Toyota", "model": "Camry", "years": [2000, 2024]},
-  "toyota_corolla": {"brand": "Toyota", "model": "Corolla", "years": [2000, 2024]},
-  "toyota_rav4": {"brand": "Toyota", "model": "RAV4", "years": [2000, 2024]},
-  "bmw_3_series": {"brand": "BMW", "model": "3 Series", "years": [2000, 2024]},
-  "bmw_5_series": {"brand": "BMW", "model": "5 Series", "years": [2000, 2024]},
-  "mercedes_c": {"brand": "Mercedes-Benz", "model": "C-Class", "years": [2000, 2024]},
-  "mercedes_e": {"brand": "Mercedes-Benz", "model": "E-Class", "years": [2000, 2024]},
-  "audi_a4": {"brand": "Audi", "model": "A4", "years": [2000, 2024]},
-  "vw_golf": {"brand": "Volkswagen", "model": "Golf", "years": [2000, 2024]},
-  "hyundai_solaris": {"brand": "Hyundai", "model": "Solaris", "years": [2010, 2024]},
-  "hyundai_creta": {"brand": "Hyundai", "model": "Creta", "years": [2016, 2024]},
-  "kia_rio": {"brand": "Kia", "model": "Rio", "years": [2000, 2024]},
-  "kia_sportage": {"brand": "Kia", "model": "Sportage", "years": [2000, 2024]},
-  "lada_vesta": {"brand": "Lada", "model": "Vesta", "years": [2015, 2024]},
-  "lada_granta": {"brand": "Lada", "model": "Granta", "years": [2011, 2024]},
-  "nissan_qashqai": {"brand": "Nissan", "model": "Qashqai", "years": [2006, 2024]},
-  "honda_civic": {"brand": "Honda", "model": "Civic", "years": [2000, 2024]},
-  "ford_focus": {"brand": "Ford", "model": "Focus", "years": [2000, 2024]},
-  "mazda_cx5": {"brand": "Mazda", "model": "CX-5", "years": [2012, 2024]},
-  "skoda_octavia": {"brand": "Skoda", "model": "Octavia", "years": [2000, 2024]}
+  "toyota_camry": {
+    "brand": "Toyota",
+    "model": "Camry",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "toyota_corolla": {
+    "brand": "Toyota",
+    "model": "Corolla",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "toyota_rav4": {
+    "brand": "Toyota",
+    "model": "RAV4",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "bmw_3_series": {
+    "brand": "BMW",
+    "model": "3 Series",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "bmw_5_series": {
+    "brand": "BMW",
+    "model": "5 Series",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "mercedes_c": {
+    "brand": "Mercedes-Benz",
+    "model": "C-Class",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "mercedes_e": {
+    "brand": "Mercedes-Benz",
+    "model": "E-Class",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "audi_a4": {
+    "brand": "Audi",
+    "model": "A4",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "vw_golf": {
+    "brand": "Volkswagen",
+    "model": "Golf",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "hyundai_solaris": {
+    "brand": "Hyundai",
+    "model": "Solaris",
+    "years": [
+      2010,
+      2024
+    ]
+  },
+  "hyundai_creta": {
+    "brand": "Hyundai",
+    "model": "Creta",
+    "years": [
+      2016,
+      2024
+    ]
+  },
+  "kia_rio": {
+    "brand": "Kia",
+    "model": "Rio",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "kia_sportage": {
+    "brand": "Kia",
+    "model": "Sportage",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "lada_vesta": {
+    "brand": "Lada",
+    "model": "Vesta",
+    "years": [
+      2015,
+      2024
+    ]
+  },
+  "lada_granta": {
+    "brand": "Lada",
+    "model": "Granta",
+    "years": [
+      2011,
+      2024
+    ]
+  },
+  "nissan_qashqai": {
+    "brand": "Nissan",
+    "model": "Qashqai",
+    "years": [
+      2006,
+      2024
+    ]
+  },
+  "honda_civic": {
+    "brand": "Honda",
+    "model": "Civic",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "ford_focus": {
+    "brand": "Ford",
+    "model": "Focus",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "mazda_cx5": {
+    "brand": "Mazda",
+    "model": "CX-5",
+    "years": [
+      2012,
+      2024
+    ]
+  },
+  "skoda_octavia": {
+    "brand": "Skoda",
+    "model": "Octavia",
+    "years": [
+      2000,
+      2024
+    ]
+  },
+  "ford_fusion": {
+    "brand": "Ford",
+    "model": "Fusion",
+    "years": [
+      2002,
+      2012
+    ]
+  }
 }

@@ -20,7 +20,7 @@ MODELS = {
     "Kia": ["Rio", "Sportage", "Cerato", "Sorento", "K5"],
     "Nissan": ["Qashqai", "X-Trail", "Almera", "Patrol", "Murano"],
     "Honda": ["Civic", "CR-V", "Accord", "HR-V", "Pilot"],
-    "Ford": ["Focus", "Mondeo", "Kuga", "Explorer", "Ranger"],
+    "Ford": ["Focus", "Fusion", "Mondeo", "Kuga", "Explorer", "Ranger"],
     "Lada": ["Granta", "Vesta", "XRAY", "Largus", "Niva"],
     "Geely": ["Atlas", "Coolray", "Emgrand", "Tugella", "Monjaro"],
     "Chery": ["Tiggo 7", "Tiggo 4", "Tiggo 8", "Arrizo 5", "Omoda 5"],
