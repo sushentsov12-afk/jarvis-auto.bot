@@ -129,6 +129,7 @@ def process_diagnostic_input(message: Message) -> None:
         return
     bot.send_chat_action(message.chat.id, "typing")
 
+    # 1. Сначала диалоговое дерево (уточняющие вопросы)
     tree = find_tree(text)
     if tree:
         state = DialogState(tree_id=tree.tree_id, current_node_id=tree.root_node_id)
@@ -142,6 +143,26 @@ def process_diagnostic_input(message: Message) -> None:
         )
         return
 
+    # 2. Поиск по диагностической базе (65 проблем)
+    from diagnostic import smart_search
+    result_smart = smart_search(text)
+    if result_smart:
+        from diagnostic import format_diagnostic as fmt_diag
+        # Проверяем учитывает ли авто пользователя
+        car = user_vehicle.get_vehicle(user_id)
+        car_note = ""
+        if car:
+            car_note = f"\n\n🚗 <i>Для {car['brand']} {car['model']}: уточните у механика применимость.</i>"
+        add_entry(user_id, text, result_smart["technical_name"], result_smart.get("urgency", "medium"))
+        answer = fmt_diag(result_smart)
+        bot.send_message(
+            message.chat.id,
+            f"<b>🔎 Джек определил проблему:</b>\n\n{answer}{car_note}",
+            reply_markup=after_diagnostic_keyboard()
+        )
+        return
+
+    # 3. Нечёткий поиск по каталогу запчастей
     part = find_best_match(text, PARTS)
     if part:
         title = f"Диагностика {part.id}" if part.type == "obd" else "Подбор по симптому"
@@ -149,13 +170,7 @@ def process_diagnostic_input(message: Message) -> None:
         add_entry(user_id, text, part.name, "medium")
         return
 
-    result, confidence = search_by_phrase(text)
-    if result:
-        add_entry(user_id, text, result["technical_name"], result.get("urgency", "medium"))
-        answer = format_diagnostic(result, confidence)
-        bot.send_message(message.chat.id, f"<b>🔎 Джек нашёл похожую проблему:</b>\n\n{answer}", reply_markup=after_diagnostic_keyboard())
-        return
-
+    # 4. GigaChat AI
     if ai_assistant.is_enabled():
         try:
             answer = ai_assistant.ask(text)
@@ -164,7 +179,16 @@ def process_diagnostic_input(message: Message) -> None:
         except Exception:
             logger.exception("GigaChat failed")
 
-    bot.send_message(message.chat.id, format_ai_fallback(text), reply_markup=main_inline_keyboard())
+    # 5. Не нашли — просим уточнить
+    bot.send_message(
+        message.chat.id,
+        f"🤔 <b>Джек не смог точно определить проблему по запросу:</b>\n<i>«{text}»</i>\n\n"
+        f"Попробуйте описать симптом подробнее. Например:\n"
+        f"• <i>стучит спереди слева на кочках</i>\n"
+        f"• <i>дымит синим дымом при запуске</i>\n"
+        f"• <i>горит лампочка давление масла</i>",
+        reply_markup=diagnostic_menu_keyboard()
+    )
 
 
 # ─── МОЁ АВТО (inline callbacks) ─────────────────────────────────────────────
