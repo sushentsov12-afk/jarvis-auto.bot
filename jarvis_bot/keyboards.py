@@ -33,7 +33,7 @@ MODELS = {
     "Mitsubishi": ["Outlander", "ASX", "Eclipse Cross", "L200", "Pajero"],
 }
 
-YEARS = [str(y) for y in range(2024, 1999, -1)]
+YEARS = [str(y) for y in range(2024, 1985, -1)]
 
 
 def main_reply_keyboard() -> ReplyKeyboardMarkup:
@@ -103,10 +103,21 @@ def model_inline_keyboard(brand: str) -> InlineKeyboardMarkup:
     return kb
 
 
-def year_inline_keyboard(brand: str, model: str) -> InlineKeyboardMarkup:
+def year_inline_keyboard(brand: str, model: str, page: int = 0) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=4)
-    buttons = [InlineKeyboardButton(y, callback_data=f"year_{brand}_{model}_{y}") for y in YEARS[:16]]
+    page_size = 16
+    start = page * page_size
+    end = start + page_size
+    page_years = YEARS[start:end]
+    buttons = [InlineKeyboardButton(y, callback_data=f"year_{brand}_{model}_{y}") for y in page_years]
     kb.add(*buttons)
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton("◀️ Новее", callback_data=f"year_page_{brand}_{model}_{page-1}"))
+    if end < len(YEARS):
+        nav.append(InlineKeyboardButton("Старше ▶️", callback_data=f"year_page_{brand}_{model}_{page+1}"))
+    if nav:
+        kb.add(*nav)
     kb.add(
         InlineKeyboardButton("⬅️ К моделям", callback_data=f"select_model_{brand}"),
         InlineKeyboardButton("🏠 Меню", callback_data="main_menu"),

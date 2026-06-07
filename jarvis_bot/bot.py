@@ -356,6 +356,20 @@ def on_select_brand_cb(call: CallbackQuery) -> None:
     bot.answer_callback_query(call.id)
     bot.edit_message_text("🚗 <b>Выберите марку автомобиля:</b>", call.message.chat.id, call.message.message_id, reply_markup=brand_inline_keyboard())
 
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("year_page_"))
+def on_year_page(call: CallbackQuery) -> None:
+    bot.answer_callback_query(call.id)
+    parts = call.data.split("_")
+    # year_page_brand_model_page
+    page = int(parts[-1])
+    model = parts[-2]
+    brand = "_".join(parts[2:-2])
+    from keyboards import year_inline_keyboard
+    bot.edit_message_reply_markup(
+        call.message.chat.id, call.message.message_id,
+        reply_markup=year_inline_keyboard(brand, model, page)
+    )
+
 @bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("select_model_"))
 def on_select_model_cb(call: CallbackQuery) -> None:
     bot.answer_callback_query(call.id)
