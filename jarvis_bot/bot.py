@@ -236,6 +236,53 @@ def btn_history(message: Message) -> None:
     bot.send_message(message.chat.id, format_history(user_id), reply_markup=back_to_menu_keyboard())
 
 
+# ─── ОБРАТНАЯ СВЯЗЬ ─────────────────────────────────────────────────────────
+
+@bot.message_handler(func=lambda m: m.text == "💬 Обратная связь")
+def btn_feedback(message: Message) -> None:
+    text = (
+        "💬 <b>Обратная связь</b>\n\n"
+        "Напишите ваше пожелание, предложение или благодарность — "
+        "оно сразу уйдёт администратору.\n\n"
+        "<i>Примеры:</i>\n"
+        "• Хочу добавить мою марку авто\n"
+        "• Не нашёл ответ на вопрос про...\n"
+        "• Спасибо, очень помогло! 🙏"
+    )
+    bot.send_message(message.chat.id, text, reply_markup=back_to_menu_keyboard())
+    bot.register_next_step_handler(message, process_feedback)
+
+def process_feedback(message: Message) -> None:
+    if message.text in ("🏠 Главное меню", "/start"):
+        return go_main_menu(message)
+
+    import os
+    user = message.from_user
+    admin_id = os.getenv("ADMIN_ID", "")
+    text = message.text or ""
+
+    # Отправляем сообщение пользователю
+    bot.send_message(
+        message.chat.id,
+        "✅ <b>Спасибо!</b> Ваше сообщение отправлено администратору.",
+        reply_markup=main_reply_keyboard()
+    )
+
+    # Пересылаем админу
+    if admin_id:
+        user_info = f"@{user.username}" if user and user.username else f"id:{user.id if user else '?'}"
+        name = (user.first_name or "") if user else ""
+        try:
+            msg = (
+                f"\U0001f4e9 <b>Обратная связь</b>\n\n"
+                f"\U0001f464 {name} ({user_info})\n\n"
+                f"\U0001f4ac {text}"
+            )
+            bot.send_message(int(admin_id), msg)
+        except Exception as e:
+            logger.warning("Feedback forward failed: %s", e)
+
+
 # ─── СЕРВИСЫ И SOS ───────────────────────────────────────────────────────────
 
 @bot.message_handler(func=lambda m: m.text == "🏪 Сервисы")

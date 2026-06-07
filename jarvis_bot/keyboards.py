@@ -45,6 +45,7 @@ def main_reply_keyboard() -> ReplyKeyboardMarkup:
         KeyboardButton("🏪 Сервисы"),
         KeyboardButton("🆘 SOS"),
         KeyboardButton("ℹ️ Справка"),
+        KeyboardButton("💬 Обратная связь"),
     )
     return kb
 
