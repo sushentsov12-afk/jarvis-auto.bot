@@ -186,3 +186,29 @@ def confirm_vehicle_keyboard() -> InlineKeyboardMarkup:
 def brand_keyboard(brands): return brand_inline_keyboard()
 def model_keyboard(models): return main_inline_keyboard()
 def year_keyboard(): return main_inline_keyboard()
+
+
+def admin_keyboard() -> ReplyKeyboardMarkup:
+    kb = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    kb.add(
+        KeyboardButton("🔍 ДИАГНОСТИКА"),
+        KeyboardButton("🚗 Моё авто"),
+        KeyboardButton("📋 История"),
+        KeyboardButton("🏪 Сервисы"),
+        KeyboardButton("🆘 SOS"),
+        KeyboardButton("ℹ️ Справка"),
+        KeyboardButton("💬 Обратная связь"),
+        KeyboardButton("🛠 Админ панель"),
+    )
+    return kb
+
+
+def admin_panel_keyboard() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(
+        InlineKeyboardButton("👥 Пользователи", callback_data="admin_stats"),
+        InlineKeyboardButton("❓ Нераспознанные", callback_data="admin_unknown"),
+        InlineKeyboardButton("📢 Рассылка", callback_data="admin_broadcast"),
+        InlineKeyboardButton("🗄 База диагностики", callback_data="admin_db_info"),
+    )
+    return kb

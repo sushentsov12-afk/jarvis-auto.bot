@@ -17,6 +17,7 @@ from formatters import (
     welcome_text, format_my_car, format_diagnostic_start, format_typical_issues
 )
 from keyboards import (
+    admin_keyboard, admin_panel_keyboard,
     main_reply_keyboard, back_to_menu_keyboard, diagnostic_menu_keyboard,
     my_car_menu_keyboard, main_inline_keyboard, sos_location_keyboard,
     sos_inline_keyboard, after_diagnostic_keyboard, dialog_options_keyboard,
@@ -41,11 +42,21 @@ def cmd_start(message: Message) -> None:
     if user:
         from broadcaster import register_user
         register_user(user.id, username=user.username or "", first_name=user.first_name or "")
+    import os
+    is_admin = user and str(user.id) == str(os.getenv("ADMIN_ID", ""))
     bot.send_message(
         message.chat.id,
         welcome_text(first_name=user.first_name if user else None),
-        reply_markup=main_reply_keyboard(),
+        reply_markup=admin_keyboard() if is_admin else main_reply_keyboard(),
     )
+
+@bot.message_handler(commands=["admin"])
+def cmd_admin(message: Message) -> None:
+    import os
+    user = message.from_user
+    if not user or str(user.id) != str(os.getenv("ADMIN_ID", "")):
+        return
+    bot.send_message(message.chat.id, "🛠 <b>Панель администратора</b>", reply_markup=admin_keyboard())
 
 @bot.message_handler(commands=["broadcast"])
 def cmd_broadcast(message: Message) -> None:
@@ -260,6 +271,30 @@ def btn_history(message: Message) -> None:
     bot.send_message(message.chat.id, format_history(user_id), reply_markup=back_to_menu_keyboard())
 
 
+# ─── АДМИН ПАНЕЛЬ ────────────────────────────────────────────────────────────
+
+@bot.message_handler(func=lambda m: m.text == "🛠 Админ панель")
+def btn_admin_panel(message: Message) -> None:
+    import os
+    user = message.from_user
+    if not user or str(user.id) != str(os.getenv("ADMIN_ID", "")):
+        return
+    from broadcaster import get_user_count
+    from clarify import get_unknown_queries
+    import json
+    db = json.load(open("data/diagnostic_base.json", encoding="utf-8"))
+    unknown = get_unknown_queries(5)
+    top = "\n".join(f"  • [{q['count']}x] {q['query']}" for q in unknown) or "  Нет"
+    text = (
+        "🛠 <b>Панель администратора Jarvis Auto</b>\n\n"
+        f"👥 Пользователей: <b>{get_user_count()}</b>\n"
+        f"🗄 Записей в базе диагностики: <b>{len(db)}</b>\n\n"
+        f"❓ <b>Топ нераспознанных запросов:</b>\n{top}"
+    )
+    from keyboards import admin_panel_keyboard
+    bot.send_message(message.chat.id, text, reply_markup=admin_panel_keyboard())
+
+
 # ─── ОБРАТНАЯ СВЯЗЬ ─────────────────────────────────────────────────────────
 
 @bot.message_handler(func=lambda m: m.text == "💬 Обратная связь")
@@ -462,6 +497,79 @@ def on_dialog_answer(call: CallbackQuery) -> None:
     set_state(user_id, state)
     hint = f"\n<i>{next_node.hint}</i>" if next_node.hint else ""
     bot.send_message(chat_id, f"<b>{next_node.question}</b>{hint}", reply_markup=dialog_options_keyboard(next_node.options, tree_id))
+
+
+# ─── ADMIN CALLBACKS ─────────────────────────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("admin_"))
+def on_admin_callback(call: CallbackQuery) -> None:
+    import os
+    user = call.from_user
+    if not user or str(user.id) != str(os.getenv("ADMIN_ID", "")):
+        bot.answer_callback_query(call.id, "⛔ Нет доступа")
+        return
+
+    bot.answer_callback_query(call.id)
+    chat_id = call.message.chat.id
+
+    if call.data == "admin_stats":
+        from broadcaster import get_user_count
+        bot.send_message(chat_id, f"👥 Пользователей: <b>{get_user_count()}</b>")
+
+    elif call.data == "admin_unknown":
+        from clarify import get_unknown_queries
+        queries = get_unknown_queries(20)
+        if not queries:
+            bot.send_message(chat_id, "🎉 Нераспознанных запросов нет!")
+            return
+        lines = ["❓ <b>Нераспознанные запросы (топ-20):</b>\n"]
+        for i, q in enumerate(queries, 1):
+            lines.append(f"{i}. [{q['count']}x] {q['query']}")
+        bot.send_message(chat_id, "\n".join(lines))
+
+    elif call.data == "admin_broadcast":
+        bot.send_message(
+            chat_id,
+            "📢 <b>Рассылка</b>\n\nОтправьте текст сообщения для рассылки всем пользователям:",
+            reply_markup=back_to_menu_keyboard()
+        )
+        bot.register_next_step_handler(call.message, process_broadcast_input)
+
+    elif call.data == "admin_db_info":
+        import json, os
+        path = os.path.join(os.path.dirname(__file__), "data", "diagnostic_base.json")
+        db = json.load(open(path, encoding="utf-8"))
+        total_queries = sum(len(x.get("user_queries", [])) for x in db)
+        urgency = {}
+        for x in db:
+            u = x.get("urgency", "medium")
+            urgency[u] = urgency.get(u, 0) + 1
+        text = (
+            f"🗄 <b>База диагностики</b>\n\n"
+            f"Записей: <b>{len(db)}</b>\n"
+            f"Поисковых фраз: <b>{total_queries}</b>\n\n"
+            f"🚨 Критических: {urgency.get('critical', 0)}\n"
+            f"⚠️ Важных: {urgency.get('high', 0)}\n"
+            f"🔧 Средних: {urgency.get('medium', 0)}\n"
+            f"ℹ️ Низких: {urgency.get('low', 0)}"
+        )
+        bot.send_message(chat_id, text)
+
+
+def process_broadcast_input(message: Message) -> None:
+    import os
+    user = message.from_user
+    if not user or str(user.id) != str(os.getenv("ADMIN_ID", "")):
+        return
+    if message.text in ("🏠 Главное меню", "/start"):
+        return go_main_menu(message)
+    from broadcaster import broadcast, get_user_count
+    bot.send_message(message.chat.id, "⏳ Начинаю рассылку...")
+    result = broadcast(bot, message.text)
+    bot.send_message(
+        message.chat.id,
+        f"✅ Готово!\n👥 {get_user_count()} польз. | 📨 {result['sent']} | ❌ {result['failed']}"
+    )
 
 
 # ─── УТОЧНЯЮЩИЕ ВОПРОСЫ ──────────────────────────────────────────────────────
