@@ -275,6 +275,61 @@ def show_typical_issues(message: Message) -> None:
     bot.send_message(message.chat.id, format_typical_issues(car['brand'], car['model'], car['year'], issues), reply_markup=back_to_menu_keyboard())
 
 
+# ─── ДИАГНОСТИКА ПО ФОТО ─────────────────────────────────────────────────────
+
+@bot.message_handler(content_types=["photo"])
+def on_photo(message) -> None:
+    user_id = message.from_user.id if message.from_user else 0
+    bot.send_chat_action(message.chat.id, "typing")
+
+    # Берём фото наилучшего качества
+    photo = message.photo[-1]
+    file_info = bot.get_file(photo.file_id)
+    image_bytes = bot.download_file(file_info.file_path)
+
+    bot.send_message(
+        message.chat.id,
+        "📸 Фото получено. Джек анализирует...",
+    )
+    bot.send_chat_action(message.chat.id, "typing")
+
+    from photo_diagnosis import analyze_photo, save_photo_result, format_photo_result
+    result = analyze_photo(image_bytes)
+
+    if not result:
+        bot.send_message(
+            message.chat.id,
+            "\U0001f614 Не удалось проанализировать фото.\n\n"
+            "Попробуйте:\n"
+            "\u2022 Сделать фото чётче и ближе\n"
+            "\u2022 Описать проблему текстом через \U0001f50d ДИАГНОСТИКА",
+            reply_markup=diagnostic_menu_keyboard()
+        )
+        return
+
+    if not result.get("found"):
+        bot.send_message(
+            message.chat.id,
+            "\U0001f914 На фото не видно автомобильной проблемы.\n\n"
+            f"<i>Вижу: {result.get('what_i_see', 'не определено')}</i>\n\n"
+            "Попробуйте сфотографировать:\n"
+            "\u2022 Место утечки или ржавчины\n"
+            "\u2022 Выхлопную трубу (дым)\n"
+            "\u2022 Тормозные колодки / диски\n"
+            "\u2022 Ремень или шланги под капотом\n"
+            "\u2022 Экран OBD сканера с кодом ошибки",
+            reply_markup=diagnostic_menu_keyboard()
+        )
+        return
+
+    # Сохраняем в базу
+    save_photo_result(result)
+    add_entry(user_id, f"фото: {result.get('symptom', '')}", result.get("technical_name", ""), result.get("urgency", "medium"))
+
+    text = format_photo_result(result)
+    bot.send_message(message.chat.id, text, reply_markup=after_diagnostic_keyboard())
+
+
 # ─── ИСТОРИЯ ─────────────────────────────────────────────────────────────────
 
 @bot.message_handler(func=lambda m: m.text == "📋 История")
