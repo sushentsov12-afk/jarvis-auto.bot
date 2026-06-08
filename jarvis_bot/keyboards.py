@@ -109,13 +109,14 @@ def year_inline_keyboard(brand: str, model: str, page: int = 0) -> InlineKeyboar
     start = page * page_size
     end = start + page_size
     page_years = YEARS[start:end]
-    buttons = [InlineKeyboardButton(y, callback_data=f"year_{brand}_{model}_{y}") for y in page_years]
+    # Используем | как разделитель чтобы не резать бренды с пробелами
+    buttons = [InlineKeyboardButton(y, callback_data=f"year|{brand}|{model}|{y}") for y in page_years]
     kb.add(*buttons)
     nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton("◀️ Новее", callback_data=f"year_page_{brand}_{model}_{page-1}"))
+        nav.append(InlineKeyboardButton("◀️ Новее", callback_data=f"ypage|{brand}|{model}|{page-1}"))
     if end < len(YEARS):
-        nav.append(InlineKeyboardButton("Старше ▶️", callback_data=f"year_page_{brand}_{model}_{page+1}"))
+        nav.append(InlineKeyboardButton("Старше ▶️", callback_data=f"ypage|{brand}|{model}|{page+1}"))
     if nav:
         kb.add(*nav)
     kb.add(

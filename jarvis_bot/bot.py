@@ -397,13 +397,13 @@ def on_model_selected(call: CallbackQuery) -> None:
         reply_markup=year_inline_keyboard(brand, model)
     )
 
-@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("year_"))
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("year|"))
 def on_year_selected(call: CallbackQuery) -> None:
     bot.answer_callback_query(call.id)
-    parts = call.data.split("_", 3)
+    parts = call.data.split("|")
     if len(parts) < 4:
         return
-    brand, model, year = parts[1], parts[2], parts[3]
+    _, brand, model, year = parts
     user_id = call.from_user.id if call.from_user else 0
     user_vehicle.set_vehicle(user_id, brand, model, year)
     text = format_my_car(brand, model, year)
@@ -415,18 +415,17 @@ def on_select_brand_cb(call: CallbackQuery) -> None:
     bot.answer_callback_query(call.id)
     bot.edit_message_text("🚗 <b>Выберите марку автомобиля:</b>", call.message.chat.id, call.message.message_id, reply_markup=brand_inline_keyboard())
 
-@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("year_page_"))
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("ypage|"))
 def on_year_page(call: CallbackQuery) -> None:
     bot.answer_callback_query(call.id)
-    parts = call.data.split("_")
-    # year_page_brand_model_page
-    page = int(parts[-1])
-    model = parts[-2]
-    brand = "_".join(parts[2:-2])
+    parts = call.data.split("|")
+    if len(parts) < 4:
+        return
+    _, brand, model, page = parts
     from keyboards import year_inline_keyboard
     bot.edit_message_reply_markup(
         call.message.chat.id, call.message.message_id,
-        reply_markup=year_inline_keyboard(brand, model, page)
+        reply_markup=year_inline_keyboard(brand, model, int(page))
     )
 
 @bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("select_model_"))
