@@ -67,6 +67,24 @@ def cmd_broadcast(message: Message) -> None:
         f"Отправлено: {result['sent']}\n"
         f"Ошибок: {result['failed']}")
 
+@bot.message_handler(commands=["unknown"])
+def cmd_unknown(message: Message) -> None:
+    """Топ нераспознанных запросов для пополнения базы."""
+    import os
+    admin_id = str(os.getenv("ADMIN_ID", ""))
+    user_id = str(message.from_user.id) if message.from_user else ""
+    if not admin_id or user_id != admin_id:
+        return
+    from clarify import get_unknown_queries
+    queries = get_unknown_queries(20)
+    if not queries:
+        bot.send_message(message.chat.id, "Нераспознанных запросов нет 🎉")
+        return
+    lines = ["📋 <b>Нераспознанные запросы (топ-20):</b>\n"]
+    for i, q in enumerate(queries, 1):
+        lines.append(f"{i}. [{q['count']}x] {q['query']}")
+    bot.send_message(message.chat.id, "\n".join(lines))
+
 @bot.message_handler(commands=["stats"])
 def cmd_stats(message: Message) -> None:
     import os
@@ -179,15 +197,21 @@ def process_diagnostic_input(message: Message) -> None:
         except Exception:
             logger.exception("GigaChat failed")
 
-    # 5. Не нашли — просим уточнить
+    # 5. Не нашли — сохраняем запрос и запускаем уточняющие вопросы
+    from clarify import save_unknown_query, build_clarify_text, CLARIFY_QUESTIONS
+    save_unknown_query(user_id, text)
+
+    from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+    q = CLARIFY_QUESTIONS[0]
+    kb = InlineKeyboardMarkup(row_width=2)
+    for opt in q["options"]:
+        kb.add(InlineKeyboardButton(opt, callback_data=f"clarify_0_{opt[:40]}_{text[:30]}"))
+    kb.add(InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu"))
+
     bot.send_message(
         message.chat.id,
-        f"🤔 <b>Джек не смог точно определить проблему по запросу:</b>\n<i>«{text}»</i>\n\n"
-        f"Попробуйте описать симптом подробнее. Например:\n"
-        f"• <i>стучит спереди слева на кочках</i>\n"
-        f"• <i>дымит синим дымом при запуске</i>\n"
-        f"• <i>горит лампочка давление масла</i>",
-        reply_markup=diagnostic_menu_keyboard()
+        build_clarify_text(text) + f"\n\n{q['question']}",
+        reply_markup=kb
     )
 
 
@@ -438,6 +462,66 @@ def on_dialog_answer(call: CallbackQuery) -> None:
     set_state(user_id, state)
     hint = f"\n<i>{next_node.hint}</i>" if next_node.hint else ""
     bot.send_message(chat_id, f"<b>{next_node.question}</b>{hint}", reply_markup=dialog_options_keyboard(next_node.options, tree_id))
+
+
+# ─── УТОЧНЯЮЩИЕ ВОПРОСЫ ──────────────────────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("clarify_"))
+def on_clarify_answer(call: CallbackQuery) -> None:
+    bot.answer_callback_query(call.id)
+    from clarify import CLARIFY_QUESTIONS
+    from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+    # Парсим: clarify_{step}_{answer}_{original}
+    parts = call.data.split("_", 3)
+    if len(parts) < 4:
+        return
+    step = int(parts[1])
+    answer = parts[2]
+    original = parts[3]
+
+    next_step = step + 1
+
+    if next_step < len(CLARIFY_QUESTIONS):
+        # Следующий уточняющий вопрос
+        q = CLARIFY_QUESTIONS[next_step]
+        kb = InlineKeyboardMarkup(row_width=2)
+        for opt in q["options"]:
+            kb.add(InlineKeyboardButton(
+                opt,
+                callback_data=f"clarify_{next_step}_{opt[:40]}_{original}"
+            ))
+        kb.add(InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu"))
+        bot.edit_message_text(
+            q["question"],
+            call.message.chat.id,
+            call.message.message_id,
+            reply_markup=kb
+        )
+    else:
+        # Все вопросы заданы — пробуем найти ответ ещё раз
+        from diagnostic import search_by_phrase
+        from diagnostic import format_diagnostic as fmt_diag
+        result, score = search_by_phrase(f"{original} {answer}", threshold=35)
+
+        if result:
+            bot.edit_message_text(
+                f"<b>🔎 Джек нашёл похожую проблему:</b>\n\n{fmt_diag(result)}",
+                call.message.chat.id,
+                call.message.message_id,
+                reply_markup=after_diagnostic_keyboard()
+            )
+        else:
+            bot.edit_message_text(
+                "😔 <b>Джек не смог определить причину точно.</b>\n\n"
+                "Рекомендуем:\n"
+                "• Обратиться в СТО для компьютерной диагностики\n"
+                "• Написать нам через 💬 Обратная связь — добавим в базу\n\n"
+                "<i>Ваш запрос сохранён и поможет улучшить Джека!</i>",
+                call.message.chat.id,
+                call.message.message_id,
+                reply_markup=main_inline_keyboard()
+            )
 
 
 # ─── ОБЩИЕ CALLBACKS ─────────────────────────────────────────────────────────
