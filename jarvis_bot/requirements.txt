@@ -1,5 +1,5 @@
 pyTelegramBotAPI==4.26.0
-gigachat==0.1.33
+gigachat>=0.2.1
 python-dotenv==1.1.0
 PySocks==1.7.1
 
