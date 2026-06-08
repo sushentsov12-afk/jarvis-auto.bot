@@ -208,10 +208,31 @@ def process_diagnostic_input(message: Message) -> None:
         except Exception:
             logger.exception("GigaChat failed")
 
-    # 5. Не нашли — сохраняем запрос и запускаем уточняющие вопросы
+    # 5. Не нашли — сохраняем, анализируем через GigaChat, уточняющие вопросы
     from clarify import save_unknown_query, build_clarify_text, CLARIFY_QUESTIONS
     save_unknown_query(user_id, text)
 
+    # Пробуем проанализировать через GigaChat и сохранить в базу
+    if ai_assistant.is_enabled():
+        try:
+            saved = ai_assistant.analyze_and_save(text)
+            if saved:
+                # Нашли и сохранили — отвечаем сразу
+                from diagnostic import search_by_phrase
+                from diagnostic import format_diagnostic as fmt_diag
+                result, score = search_by_phrase(text, threshold=30)
+                if result:
+                    add_entry(user_id, text, result["technical_name"], result.get("urgency", "medium"))
+                    bot.send_message(
+                        message.chat.id,
+                        f"<b>🔎 Джек определил проблему:</b>\n\n{fmt_diag(result)}",
+                        reply_markup=after_diagnostic_keyboard()
+                    )
+                    return
+        except Exception:
+            logger.exception("GigaChat analyze failed")
+
+    # Если GigaChat не помог — уточняющие вопросы
     from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
     q = CLARIFY_QUESTIONS[0]
     kb = InlineKeyboardMarkup(row_width=2)
