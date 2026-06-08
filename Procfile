@@ -1,1 +1,1 @@
-worker: cd jarvis_bot && python bot.py
+worker: python jarvis_bot/bot.py

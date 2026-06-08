@@ -199,16 +199,7 @@ def process_diagnostic_input(message: Message) -> None:
         add_entry(user_id, text, part.name, "medium")
         return
 
-    # 4. GigaChat AI
-    if ai_assistant.is_enabled():
-        try:
-            answer = ai_assistant.ask(text)
-            bot.send_message(message.chat.id, f"<b>Джек (AI):</b>\n\n{answer}", reply_markup=main_inline_keyboard())
-            return
-        except Exception:
-            logger.exception("GigaChat failed")
-
-    # 5. Не нашли — сохраняем, анализируем через GigaChat, уточняющие вопросы
+    # 4. Не нашли — сохраняем, анализируем через GigaChat, уточняющие вопросы
     from clarify import save_unknown_query, build_clarify_text, CLARIFY_QUESTIONS
     save_unknown_query(user_id, text)
 
@@ -303,7 +294,7 @@ def btn_admin_panel(message: Message) -> None:
     from broadcaster import get_user_count
     from clarify import get_unknown_queries
     import json
-    db = json.load(open("data/diagnostic_base.json", encoding="utf-8"))
+    import os as _os; db = json.load(open(_os.path.join(_os.path.dirname(__file__), "data", "diagnostic_base.json"), encoding="utf-8"))
     unknown = get_unknown_queries(5)
     top = "\n".join(f"  • [{q['count']}x] {q['query']}" for q in unknown) or "  Нет"
     text = (
