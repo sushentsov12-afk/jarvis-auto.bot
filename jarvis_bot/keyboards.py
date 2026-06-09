@@ -46,6 +46,7 @@ def main_reply_keyboard() -> ReplyKeyboardMarkup:
         KeyboardButton("🆘 SOS"),
         KeyboardButton("ℹ️ Справка"),
         KeyboardButton("💬 Обратная связь"),
+        KeyboardButton("🔧 Спросить механика"),
     )
     return kb
 
@@ -211,5 +212,6 @@ def admin_panel_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton("❓ Нераспознанные", callback_data="admin_unknown"),
         InlineKeyboardButton("📢 Рассылка", callback_data="admin_broadcast"),
         InlineKeyboardButton("🗄 База диагностики", callback_data="admin_db_info"),
+        InlineKeyboardButton("🔧 Вопросы механику", callback_data="admin_mechanic"),
     )
     return kb

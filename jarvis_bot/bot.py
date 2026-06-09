@@ -275,6 +275,72 @@ def show_typical_issues(message: Message) -> None:
     bot.send_message(message.chat.id, format_typical_issues(car['brand'], car['model'], car['year'], issues), reply_markup=back_to_menu_keyboard())
 
 
+# ─── ВОПРОС МЕХАНИКУ ────────────────────────────────────────────────────────
+
+@bot.message_handler(func=lambda m: m.text == "🔧 Спросить механика")
+def btn_ask_mechanic(message: Message) -> None:
+    user_id = message.from_user.id if message.from_user else 0
+    from user_vehicle import user_vehicle
+    car = user_vehicle.get_vehicle(user_id)
+    car_str = f"{car['brand']} {car['model']} ({car['year']})" if car else "не указано"
+
+    text = (
+        "🔧 <b>Спросить механика</b>\n\n"
+        "Опытный механик ответит на ваш вопрос лично.\n\n"
+        f"🚗 Ваше авто: <b>{car_str}</b>\n\n"
+        "Напишите ваш вопрос:"
+    )
+    bot.send_message(message.chat.id, text, reply_markup=back_to_menu_keyboard())
+    bot.register_next_step_handler(message, process_mechanic_question)
+
+
+def process_mechanic_question(message: Message) -> None:
+    if message.text in ("🏠 Главное меню", "/start"):
+        return go_main_menu(message)
+
+    user = message.from_user
+    user_id = user.id if user else 0
+    question = (message.text or "").strip()
+    if not question:
+        return
+
+    from mechanic import save_question, format_question_for_admin
+    from user_vehicle import user_vehicle
+    import os
+
+    car = user_vehicle.get_vehicle(user_id)
+    car_info = f"{car['brand']} {car['model']} ({car['year']})" if car else ""
+
+    # Сохраняем вопрос
+    q_id = save_question(
+        user_id=user_id,
+        username=user.username or "" if user else "",
+        first_name=user.first_name or "" if user else "",
+        car_info=car_info,
+        question=question,
+        chat_id=message.chat.id
+    )
+
+    # Отправляем подтверждение пользователю
+    bot.send_message(
+        message.chat.id,
+        "🔧 <b>Вопрос отправлен механику!</b>\n\n"
+        "Обычно отвечаем в течение нескольких часов.\n"
+        "Ответ придёт прямо в этот чат.",
+        reply_markup=main_reply_keyboard()
+    )
+
+    # Пересылаем механику (ADMIN)
+    admin_id = os.getenv("ADMIN_ID", "")
+    if admin_id:
+        from mechanic import format_question_for_admin, get_question
+        q = get_question(q_id)
+        try:
+            bot.send_message(int(admin_id), format_question_for_admin(q))
+        except Exception as e:
+            logger.warning("Не удалось отправить вопрос механику: %s", e)
+
+
 # ─── ДИАГНОСТИКА ПО ФОТО ─────────────────────────────────────────────────────
 
 @bot.message_handler(content_types=["photo"])
@@ -565,6 +631,98 @@ def on_dialog_answer(call: CallbackQuery) -> None:
     bot.send_message(chat_id, f"<b>{next_node.question}</b>{hint}", reply_markup=dialog_options_keyboard(next_node.options, tree_id))
 
 
+# ─── ОТВЕТЫ МЕХАНИКА ────────────────────────────────────────────────────────
+
+@bot.message_handler(regexp=r'^/answer_\d+')
+def cmd_answer(message: Message) -> None:
+    """Механик отвечает: /answer_123 Текст ответа"""
+    import os, re
+    admin_id = str(os.getenv("ADMIN_ID", ""))
+    user_id = str(message.from_user.id) if message.from_user else ""
+    if not admin_id or user_id != admin_id:
+        return
+
+    match = re.match(r'/answer_(\d+)\s*(.*)', message.text or "", re.DOTALL)
+    if not match:
+        return
+
+    q_id = int(match.group(1))
+    answer_text = match.group(2).strip()
+
+    if not answer_text:
+        bot.send_message(message.chat.id, "Укажи ответ: /answer_123 Текст ответа")
+        return
+
+    from mechanic import get_question, save_answer
+    q = get_question(q_id)
+    if not q:
+        bot.send_message(message.chat.id, f"Вопрос #{q_id} не найден")
+        return
+
+    save_answer(q_id, answer_text)
+
+    # Отправляем ответ пользователю
+    try:
+        user_name = q.get("first_name") or "Пользователь"
+        bot.send_message(
+            int(q["chat_id"]),
+            (
+                "🔧 <b>Ответ механика на ваш вопрос:</b>\n\n"
+                f"<i>Вопрос: {q['question']}</i>\n\n"
+                f"{answer_text}\n\n"
+                "<i>Если ответ помог — оставьте отзыв через 💬 Обратная связь</i>"
+            ),
+            reply_markup=main_reply_keyboard()
+        )
+        bot.send_message(
+            message.chat.id,
+            f"✅ Ответ отправлен {user_name}!\nДобавить в базу: /add_{q_id}"
+        )
+    except Exception as e:
+        logger.warning("Не удалось отправить ответ пользователю: %s", e)
+        bot.send_message(message.chat.id, f"Ответ сохранён, но не доставлен: {e}")
+
+
+@bot.message_handler(regexp=r'^/add_\d+')
+def cmd_add_to_base(message: Message) -> None:
+    """Добавляет вопрос+ответ в базу диагностики: /add_123"""
+    import os, re
+    admin_id = str(os.getenv("ADMIN_ID", ""))
+    user_id = str(message.from_user.id) if message.from_user else ""
+    if not admin_id or user_id != admin_id:
+        return
+
+    match = re.match(r'/add_(\d+)', message.text or "")
+    if not match:
+        return
+
+    q_id = int(match.group(1))
+    from mechanic import get_question, save_to_diagnostic_base
+    q = get_question(q_id)
+
+    if not q:
+        bot.send_message(message.chat.id, f"Вопрос #{q_id} не найден")
+        return
+
+    if not q.get("answer"):
+        bot.send_message(message.chat.id, f"Сначала ответь на вопрос: /answer_{q_id} [ответ]")
+        return
+
+    bot.send_message(message.chat.id, "⏳ Добавляю в базу через GigaChat...")
+    saved = save_to_diagnostic_base(q_id)
+
+    if saved:
+        import json
+        db_path = os.path.join(os.path.dirname(__file__), "data", "diagnostic_base.json")
+        db = json.load(open(db_path, encoding="utf-8"))
+        bot.send_message(
+            message.chat.id,
+            f"✅ Добавлено в базу!\n🗄 Теперь в базе: {len(db)} записей"
+        )
+    else:
+        bot.send_message(message.chat.id, "⚠️ Не удалось добавить (дубликат или ошибка GigaChat)")
+
+
 # ─── ADMIN CALLBACKS ─────────────────────────────────────────────────────────
 
 @bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("admin_"))
@@ -600,6 +758,26 @@ def on_admin_callback(call: CallbackQuery) -> None:
             reply_markup=back_to_menu_keyboard()
         )
         bot.register_next_step_handler(call.message, process_broadcast_input)
+
+    elif call.data == "admin_mechanic":
+        from mechanic import get_pending_questions, get_stats
+        stats = get_stats()
+        questions = get_pending_questions(5)
+        lines = [
+            "🔧 <b>Вопросы механику</b>\n",
+            f"Всего: {stats['total']} | Ожидают: {stats['pending']} | Отвечено: {stats['answered']}\n"
+        ]
+        if questions:
+            lines.append("<b>Неотвеченные:</b>")
+            for q in questions:
+                uname = q.get("username") or q["user_id"]
+                car = q.get("car_info") or "авто не указано"
+                lines.append(f"\n#{q['id']} @{uname} ({car})")
+                lines.append(f"<i>{q['question'][:80]}</i>")
+                lines.append(f"/answer_{q['id']} [ответ]  |  /add_{q['id']}")
+        else:
+            lines.append("\n✅ Нет неотвеченных вопросов!")
+        bot.send_message(chat_id, "\n".join(lines))
 
     elif call.data == "admin_db_info":
         import json, os
