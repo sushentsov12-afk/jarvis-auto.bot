@@ -75,7 +75,6 @@ def cmd_profile(message: Message) -> None:
     if not user:
         return
     from user_profile import get_profile, LEVELS, format_level_badge
-    from user_vehicle import user_vehicle
     p = get_profile(user.id)
     car = user_vehicle.get_vehicle(user.id)
     car_str = f"{car['brand']} {car['model']} ({car['year']})" if car else "не указано"
@@ -177,14 +176,21 @@ def cmd_stats(message: Message) -> None:
 
 @bot.message_handler(func=lambda m: m.text == "🏠 Главное меню")
 def go_main_menu(message: Message) -> None:
+    import os
     user = message.from_user
-    # Сбрасываем состояние диагностики если было
-    if message.from_user:
-        clear_state(message.from_user.id)
+    if user:
+        clear_state(user.id)
+    from user_profile import get_profile, format_level_badge
+    badge = ""
+    is_admin_user = user and str(user.id) == str(os.getenv("ADMIN_ID", ""))
+    if user:
+        p = get_profile(user.id)
+        if p:
+            badge = format_level_badge(p.get("level", "novice"))
     bot.send_message(
         message.chat.id,
-        welcome_text(first_name=user.first_name if user else None),
-        reply_markup=main_reply_keyboard(),
+        welcome_text(first_name=user.first_name if user else None, level_badge=badge),
+        reply_markup=admin_keyboard() if is_admin_user else main_reply_keyboard(),
     )
 
 @bot.message_handler(func=lambda m: m.text == "ℹ️ Справка")
@@ -349,7 +355,6 @@ def show_typical_issues(message: Message) -> None:
 @bot.message_handler(func=lambda m: m.text == "🔧 Спросить механика")
 def btn_ask_mechanic(message: Message) -> None:
     user_id = message.from_user.id if message.from_user else 0
-    from user_vehicle import user_vehicle
     car = user_vehicle.get_vehicle(user_id)
     car_str = f"{car['brand']} {car['model']} ({car['year']})" if car else "не указано"
 
@@ -374,7 +379,6 @@ def process_mechanic_question(message: Message) -> None:
         return
 
     from mechanic import save_question, format_question_for_admin
-    from user_vehicle import user_vehicle
     import os
 
     car = user_vehicle.get_vehicle(user_id)

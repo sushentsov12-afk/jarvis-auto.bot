@@ -1,17 +1,14 @@
 from catalog import PartItem, ServiceItem
 
 
-def welcome_text(first_name: str | None = None, username: str | None = None) -> str:
-    """Приветствие с учетом имени."""
-    name_line = f"Привет, <b>{first_name}</b>!\n\n" if first_name else ""
-
+def welcome_text(first_name: str | None = None, level_badge: str = "") -> str:
+    name = first_name or "Друг"
+    badge = f" {level_badge}" if level_badge else ""
     return (
-        f"{name_line}"
-        f"🚗 <b>Ваша машина говорит. Я перевожу.</b>\n\n"
-        f"Опишите что-нибудь — <i>стук, запах, лампочка, не заводится</i> — "
-        f"и я найду причину от простого к сложному.\n\n"
-        f"<b>Главное меню</b> — используйте кнопки ниже. "
-        f"Везде есть кнопка «Главное меню» чтобы вернуться."
+        f"👋 <b>Привет, {name}!{badge}</b>\n\n"
+        "Я Джек — твой автомобильный ассистент.\n"
+        "Помогу диагностировать проблему и найти решение.\n\n"
+        "Выбери действие:"
     )
 
 
