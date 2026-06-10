@@ -213,5 +213,40 @@ def admin_panel_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton("📢 Рассылка", callback_data="admin_broadcast"),
         InlineKeyboardButton("🗄 База диагностики", callback_data="admin_db_info"),
         InlineKeyboardButton("🔧 Вопросы механику", callback_data="admin_mechanic"),
+        InlineKeyboardButton("🏆 Эксперты", callback_data="admin_experts"),
     )
     return kb
+
+def level_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура выбора уровня знания авто."""
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(
+        InlineKeyboardButton("🔰 Новичок — пользуюсь меньше года", callback_data="level_novice"),
+        InlineKeyboardButton("🚗 Автолюбитель — знаю базовые вещи", callback_data="level_driver"),
+        InlineKeyboardButton("🔧 Автогараж — делаю несложный ремонт", callback_data="level_garage"),
+        InlineKeyboardButton("⚙️ Автомеханик — могу починить машину", callback_data="level_mechanic"),
+        InlineKeyboardButton("🏆 Автоэксперт — знаю всё об авто", callback_data="level_expert"),
+    )
+    return kb
+
+
+def expert_question_keyboard(question_id: int) -> InlineKeyboardMarkup:
+    """Кнопки для эксперта — взять вопрос или пропустить."""
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(
+        InlineKeyboardButton("✅ Ответить", callback_data=f"eq_take_{question_id}"),
+        InlineKeyboardButton("➡️ Пропустить", callback_data=f"eq_skip_{question_id}"),
+    )
+    return kb
+
+
+def rate_answer_keyboard(question_id: int) -> InlineKeyboardMarkup:
+    """Пользователь оценивает ответ эксперта."""
+    kb = InlineKeyboardMarkup(row_width=3)
+    kb.add(
+        InlineKeyboardButton("👍 Помогло!", callback_data=f"rate_good_{question_id}"),
+        InlineKeyboardButton("🤔 Частично", callback_data=f"rate_partial_{question_id}"),
+        InlineKeyboardButton("👎 Не помогло", callback_data=f"rate_bad_{question_id}"),
+    )
+    return kb
+

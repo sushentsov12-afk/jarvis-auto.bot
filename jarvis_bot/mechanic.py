@@ -129,3 +129,52 @@ def format_question_for_admin(q: dict) -> str:
         f"<i>Ответить:</i> /answer_{q['id']} [текст ответа]\n"
         f"<i>Добавить в базу:</i> /add_{q['id']}"
     )
+
+
+def save_expert_assigned(question_id: int, expert_id: int) -> None:
+    """Назначает эксперта на вопрос."""
+    with _get_conn() as conn:
+        conn.execute(
+            "ALTER TABLE mechanic_questions ADD COLUMN expert_id TEXT",
+        ) if "expert_id" not in [
+            r[1] for r in conn.execute("PRAGMA table_info(mechanic_questions)")
+        ] else None
+        conn.execute(
+            "UPDATE mechanic_questions SET expert_id=?, status='taken' WHERE id=?",
+            (str(expert_id), question_id)
+        )
+
+
+def notify_experts(bot, question_id: int) -> int:
+    """
+    Рассылает вопрос всем экспертам и механикам.
+    Возвращает количество уведомлённых.
+    """
+    from user_profile import get_experts
+    from keyboards import expert_question_keyboard
+
+    experts = get_experts(20)
+    q = get_question(question_id)
+    if not q:
+        return 0
+
+    car = q.get("car_info") or "не указано"
+    text = (
+        f"\U0001f6a8 <b>Новый вопрос от пользователя</b>\n\n"
+        f"\U0001f697 Авто: {car}\n\n"
+        f"\U0001f4ac <b>Вопрос:</b>\n{q['question']}"
+    )
+
+    sent = 0
+    for expert in experts:
+        try:
+            bot.send_message(
+                int(expert["user_id"]),
+                text,
+                reply_markup=expert_question_keyboard(question_id),
+                parse_mode="HTML"
+            )
+            sent += 1
+        except Exception:
+            pass
+    return sent

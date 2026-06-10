@@ -18,6 +18,7 @@ from formatters import (
 )
 from keyboards import (
     admin_keyboard, admin_panel_keyboard,
+    level_keyboard, expert_question_keyboard, rate_answer_keyboard,
     main_reply_keyboard, back_to_menu_keyboard, diagnostic_menu_keyboard,
     my_car_menu_keyboard, main_inline_keyboard, sos_location_keyboard,
     sos_inline_keyboard, after_diagnostic_keyboard, dialog_options_keyboard,
@@ -42,13 +43,81 @@ def cmd_start(message: Message) -> None:
     if user:
         from broadcaster import register_user
         register_user(user.id, username=user.username or "", first_name=user.first_name or "")
+
     import os
     is_admin = user and str(user.id) == str(os.getenv("ADMIN_ID", ""))
+
+    # Онбординг — если новый пользователь
+    if user:
+        from user_profile import is_onboarded
+        if not is_onboarded(user.id) and not is_admin:
+            from keyboards import level_keyboard
+            name = user.first_name or "Друг"
+            bot.send_message(
+                message.chat.id,
+                f"🚗 <b>Привет, {name}! Я Джек — автомобильный ассистент.</b>\n\n"
+                "Помогу диагностировать проблемы, подберу сервис и отвечу на вопросы об авто.\n\n"
+                "📋 <b>Сначала — один вопрос:</b>\n"
+                "Как хорошо вы разбираетесь в автомобилях?",
+                reply_markup=level_keyboard()
+            )
+            return
+
     bot.send_message(
         message.chat.id,
         welcome_text(first_name=user.first_name if user else None),
         reply_markup=admin_keyboard() if is_admin else main_reply_keyboard(),
     )
+
+@bot.message_handler(commands=["profile"])
+def cmd_profile(message: Message) -> None:
+    user = message.from_user
+    if not user:
+        return
+    from user_profile import get_profile, LEVELS, format_level_badge
+    from user_vehicle import user_vehicle
+    p = get_profile(user.id)
+    car = user_vehicle.get_vehicle(user.id)
+    car_str = f"{car['brand']} {car['model']} ({car['year']})" if car else "не указано"
+
+    if not p:
+        from keyboards import level_keyboard
+        bot.send_message(message.chat.id, "Выберите ваш уровень:", reply_markup=level_keyboard())
+        return
+
+    level = p.get("level", "novice")
+    badge = format_level_badge(level)
+    level_desc = LEVELS.get(level, {}).get("desc", "")
+    rating = p.get("rating", 0.0)
+    answers = p.get("answers_count", 0)
+
+    expert_block = ""
+    if level in ("mechanic", "expert"):
+        stars = "⭐" * round(rating) if rating else "нет оценок"
+        expert_block = (
+            f"\n\n🏆 <b>Статистика эксперта:</b>\n"
+            f"Ответов: {answers} | Рейтинг: {stars} ({rating:.1f})"
+        )
+
+    bot.send_message(
+        message.chat.id,
+        f"👤 <b>Ваш профиль</b>\n\n"
+        f"{badge}\n<i>{level_desc}</i>\n\n"
+        f"🚗 Авто: {car_str}"
+        f"{expert_block}\n\n"
+        f"Изменить уровень: /setlevel",
+        reply_markup=main_reply_keyboard()
+    )
+
+
+@bot.message_handler(commands=["setlevel"])
+def cmd_setlevel(message: Message) -> None:
+    bot.send_message(
+        message.chat.id,
+        "Выберите новый уровень знания авто:",
+        reply_markup=level_keyboard()
+    )
+
 
 @bot.message_handler(commands=["admin"])
 def cmd_admin(message: Message) -> None:
@@ -330,7 +399,7 @@ def process_mechanic_question(message: Message) -> None:
         reply_markup=main_reply_keyboard()
     )
 
-    # Пересылаем механику (ADMIN)
+    # 1. Пересылаем администратору
     admin_id = os.getenv("ADMIN_ID", "")
     if admin_id:
         from mechanic import format_question_for_admin, get_question
@@ -338,7 +407,13 @@ def process_mechanic_question(message: Message) -> None:
         try:
             bot.send_message(int(admin_id), format_question_for_admin(q))
         except Exception as e:
-            logger.warning("Не удалось отправить вопрос механику: %s", e)
+            logger.warning("Не удалось отправить вопрос админу: %s", e)
+
+    # 2. Рассылаем всем экспертам и механикам
+    from mechanic import notify_experts
+    sent = notify_experts(bot, q_id)
+    if sent > 0:
+        logger.info("Вопрос #%d разослан %d экспертам", q_id, sent)
 
 
 # ─── ДИАГНОСТИКА ПО ФОТО ─────────────────────────────────────────────────────
@@ -664,15 +739,16 @@ def cmd_answer(message: Message) -> None:
     # Отправляем ответ пользователю
     try:
         user_name = q.get("first_name") or "Пользователь"
+        from keyboards import rate_answer_keyboard
         bot.send_message(
             int(q["chat_id"]),
             (
                 "🔧 <b>Ответ механика на ваш вопрос:</b>\n\n"
                 f"<i>Вопрос: {q['question']}</i>\n\n"
                 f"{answer_text}\n\n"
-                "<i>Если ответ помог — оставьте отзыв через 💬 Обратная связь</i>"
+                "<i>Помог ли вам этот ответ?</i>"
             ),
-            reply_markup=main_reply_keyboard()
+            reply_markup=rate_answer_keyboard(q_id)
         )
         bot.send_message(
             message.chat.id,
@@ -758,6 +834,21 @@ def on_admin_callback(call: CallbackQuery) -> None:
             reply_markup=back_to_menu_keyboard()
         )
         bot.register_next_step_handler(call.message, process_broadcast_input)
+
+    elif call.data == "admin_experts":
+        from user_profile import get_experts, LEVELS
+        experts = get_experts(20)
+        if not experts:
+            bot.send_message(chat_id, "Экспертов пока нет. Пользователи с уровнем Механик или Эксперт появятся здесь.")
+            return
+        lines = ["🏆 <b>Эксперты и механики:</b>\n"]
+        for e in experts:
+            badge = LEVELS.get(e["level"], {}).get("emoji", "⚙️")
+            name = e.get("first_name") or f"id:{e['user_id']}"
+            uname = f"@{e['username']}" if e.get("username") else ""
+            stars = round(e.get("rating") or 0)
+            lines.append(f"{badge} {name} {uname} | ⭐{stars} | {e.get('answers_count',0)} ответов")
+        bot.send_message(chat_id, "\n".join(lines))
 
     elif call.data == "admin_mechanic":
         from mechanic import get_pending_questions, get_stats
@@ -874,6 +965,114 @@ def on_clarify_answer(call: CallbackQuery) -> None:
                 call.message.message_id,
                 reply_markup=main_inline_keyboard()
             )
+
+
+# ─── ОНБОРДИНГ / УРОВЕНЬ ─────────────────────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("level_"))
+def on_level_selected(call: CallbackQuery) -> None:
+    bot.answer_callback_query(call.id)
+    user = call.from_user
+    if not user:
+        return
+
+    level = call.data.replace("level_", "")
+    from user_profile import set_level, LEVELS
+    set_level(user.id, level)
+
+    level_info = LEVELS.get(level, LEVELS["novice"])
+    emoji = level_info["emoji"]
+    title = level_info["title"]
+    desc = level_info["desc"]
+
+    # Персонализированное приветствие по уровню
+    if level in ("mechanic", "expert"):
+        extra = (
+            "\n\n🏆 <b>Отлично! Вы можете помогать другим пользователям.</b>\n"
+            "Когда кто-то задаст вопрос — вы получите уведомление.\n"
+            "За каждый полезный ответ вы будете получать рейтинг."
+        )
+    elif level == "garage":
+        extra = "\n\n🔧 Буду давать вам более технические ответы."
+    else:
+        extra = "\n\nБуду объяснять всё простым языком 👍"
+
+    bot.edit_message_text(
+        f"{emoji} <b>Уровень: {title}</b>\n<i>{desc}</i>{extra}\n\n"
+        "Теперь выберите ваш автомобиль или начните диагностику!",
+        call.message.chat.id,
+        call.message.message_id,
+    )
+
+    import os
+    is_admin = str(user.id) == str(os.getenv("ADMIN_ID", ""))
+    bot.send_message(
+        call.message.chat.id,
+        welcome_text(first_name=user.first_name),
+        reply_markup=admin_keyboard() if is_admin else main_reply_keyboard(),
+    )
+
+
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("rate_"))
+def on_rate_answer(call: CallbackQuery) -> None:
+    """Пользователь оценивает ответ эксперта."""
+    bot.answer_callback_query(call.id)
+    parts = call.data.split("_")
+    rating_type = parts[1]   # good / partial / bad
+    q_id = int(parts[2])
+
+    rating_map = {"good": 5.0, "partial": 3.0, "bad": 1.0}
+    rating = rating_map.get(rating_type, 3.0)
+
+    from mechanic import get_question
+    from user_profile import add_answer_rating
+    q = get_question(q_id)
+
+    if q and q.get("expert_id"):
+        add_answer_rating(int(q["expert_id"]), rating)
+
+    msg = {
+        "good": "👍 Спасибо за оценку! Эксперт получит +рейтинг.",
+        "partial": "🤔 Понятно. Попробуйте уточнить вопрос.",
+        "bad": "👎 Жаль. Попробуем найти другого эксперта.",
+    }.get(rating_type, "Спасибо!")
+
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+    bot.send_message(call.message.chat.id, msg, reply_markup=main_reply_keyboard())
+
+
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("eq_"))
+def on_expert_question(call: CallbackQuery) -> None:
+    """Эксперт берёт или пропускает вопрос."""
+    bot.answer_callback_query(call.id)
+    parts = call.data.split("_")
+    action = parts[1]   # take / skip
+    q_id = int(parts[2])
+
+    if action == "skip":
+        bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+        bot.send_message(call.message.chat.id, "Вопрос пропущен.")
+        return
+
+    # Эксперт берёт вопрос
+    from mechanic import get_question, save_expert_assigned
+    q = get_question(q_id)
+    if not q:
+        bot.send_message(call.message.chat.id, "Вопрос уже решён или не найден.")
+        return
+
+    try:
+        save_expert_assigned(q_id, call.from_user.id)
+    except Exception:
+        pass
+
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+    bot.send_message(
+        call.message.chat.id,
+        f"✅ Вопрос #{q_id} закреплён за вами!\n\n"
+        f"<b>Вопрос:</b> {q['question']}\n\n"
+        f"Ответьте: /answer_{q_id} [ваш ответ]"
+    )
 
 
 # ─── ОБЩИЕ CALLBACKS ─────────────────────────────────────────────────────────
