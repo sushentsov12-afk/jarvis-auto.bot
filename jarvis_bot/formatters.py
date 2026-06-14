@@ -172,3 +172,70 @@ def format_diagnostic_start(car_info: str = "") -> str:
         f"• 📸 фото утечки масла\n"
         f"• 📸 фото OBD-сканера с кодом"
     )
+
+
+def simplify_for_novice(text: str) -> str:
+    """Упрощает технический текст для новичков — добавляет эмодзи и расшифровки."""
+    replacements = {
+        "ДМРВ": "ДМРВ (датчик воздуха в двигателе)",
+        "РХХ": "РХХ (регулятор оборотов на холостом ходу)",
+        "ДТОЖ": "ДТОЖ (датчик температуры двигателя)",
+        "ГБЦ": "ГБЦ (верхняя крышка двигателя)",
+        "ЦПГ": "ЦПГ (поршни и цилиндры двигателя)",
+        "сайлентблок": "сайлентблок (резиновая втулка-гаситель)",
+        "гидрокомпенсатор": "гидрокомпенсатор (деталь для тихой работы клапанов)",
+    }
+    for term, replacement in replacements.items():
+        if term in text and replacement not in text:
+            text = text.replace(term, replacement, 1)
+    return text
+
+
+def format_diagnostic_for_level(result: dict, level: str = "novice") -> str:
+    """Форматирует результат диагностики с учётом уровня пользователя."""
+    urgency_icon = {
+        "critical": "🚨",
+        "high": "⚠️",
+        "medium": "🔧",
+        "low": "ℹ️",
+    }.get(result.get("urgency", "medium"), "🔧")
+
+    name = result.get("technical_name", "")
+    desc = result.get("ru_description", "")
+    cause = result.get("probable_cause", "")
+    action = result.get("action_required", "")
+    price = result.get("price_range", "")
+    lesson = result.get("lesson", "")
+    warning = result.get("warning", "")
+
+    if level in ("novice", "driver"):
+        # Упрощённый формат для новичков
+        desc = simplify_for_novice(desc)
+        action = simplify_for_novice(action)
+        lines = [
+            f"{urgency_icon} <b>{name}</b>\n",
+            f"<b>Что происходит:</b> {desc}",
+        ]
+        if action:
+            lines.append(f"\n<b>Что делать:</b> {action}")
+        if price:
+            lines.append(f"<b>Стоимость ремонта:</b> {price}")
+        if warning:
+            lines.append(f"\n⚡ <b>Важно:</b> {warning}")
+        if lesson:
+            lines.append(f"\n💡 <i>{lesson}</i>")
+        lines.append("\n<i>Не уверены? Нажмите 🔧 Спросить механика</i>")
+    else:
+        # Полный технический формат
+        lines = [
+            f"{urgency_icon} <b>{name}</b>\n",
+            f"{desc}",
+            f"\n<b>Причина:</b> {cause}" if cause else "",
+            f"<b>Действие:</b> {action}" if action else "",
+            f"<b>Стоимость:</b> {price}" if price else "",
+            f"\n⚡ {warning}" if warning else "",
+            f"\n💡 <i>{lesson}</i>" if lesson else "",
+        ]
+
+    return "\n".join(line for line in lines if line)
+

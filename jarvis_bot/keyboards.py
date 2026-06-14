@@ -47,6 +47,7 @@ def main_reply_keyboard() -> ReplyKeyboardMarkup:
         KeyboardButton("ℹ️ Справка"),
         KeyboardButton("💬 Обратная связь"),
         KeyboardButton("🔧 Спросить механика"),
+        KeyboardButton("📚 FAQ — частые вопросы"),
     )
     return kb
 
@@ -250,3 +251,21 @@ def rate_answer_keyboard(question_id: int) -> InlineKeyboardMarkup:
     )
     return kb
 
+
+
+def faq_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура FAQ для новичков."""
+    from faq import FAQ
+    kb = InlineKeyboardMarkup(row_width=1)
+    for i, item in enumerate(FAQ):
+        kb.add(InlineKeyboardButton(item["question"], callback_data=f"faq_{i}"))
+    return kb
+
+
+def faq_back_keyboard() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(
+        InlineKeyboardButton("◀️ Назад к FAQ", callback_data="faq_menu"),
+        InlineKeyboardButton("🔍 Диагностика", callback_data="new_diagnostic"),
+    )
+    return kb

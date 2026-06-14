@@ -201,6 +201,16 @@ def btn_help(message: Message) -> None:
         reply_markup=back_to_menu_keyboard(),
     )
 
+@bot.message_handler(func=lambda m: m.text == "📚 FAQ — частые вопросы")
+def btn_faq(message: Message) -> None:
+    from faq import FAQ
+    from keyboards import faq_keyboard
+    text = (
+        "📚 <b>FAQ — Частые вопросы новичков</b>\n\n"
+        "Выберите вопрос — я отвечу простым языком:"
+    )
+    bot.send_message(message.chat.id, text, reply_markup=faq_keyboard())
+
 
 # ─── ДИАГНОСТИКА ─────────────────────────────────────────────────────────────
 
@@ -247,18 +257,22 @@ def process_diagnostic_input(message: Message) -> None:
         )
         return
 
-    # 2. Поиск по диагностической базе (65 проблем)
+    # 2. Поиск по диагностической базе (212+ проблем)
     from diagnostic import smart_search
     result_smart = smart_search(text)
     if result_smart:
-        from diagnostic import format_diagnostic as fmt_diag
-        # Проверяем учитывает ли авто пользователя
+        from formatters import format_diagnostic_for_level
+        from user_profile import get_profile
+        # Уровень пользователя для адаптации ответа
+        profile = get_profile(user_id)
+        level = profile.get("level", "novice") if profile else "novice"
+        # Проверяем авто пользователя
         car = user_vehicle.get_vehicle(user_id)
         car_note = ""
         if car:
             car_note = f"\n\n🚗 <i>Для {car['brand']} {car['model']}: уточните у механика применимость.</i>"
         add_entry(user_id, text, result_smart["technical_name"], result_smart.get("urgency", "medium"))
-        answer = fmt_diag(result_smart)
+        answer = format_diagnostic_for_level(result_smart, level)
         bot.send_message(
             message.chat.id,
             f"<b>🔎 Джек определил проблему:</b>\n\n{answer}{car_note}",
@@ -948,12 +962,16 @@ def on_clarify_answer(call: CallbackQuery) -> None:
     else:
         # Все вопросы заданы — пробуем найти ответ ещё раз
         from diagnostic import search_by_phrase
-        from diagnostic import format_diagnostic as fmt_diag
+        from formatters import format_diagnostic_for_level
+        from user_profile import get_profile
         result, score = search_by_phrase(f"{original} {answer}", threshold=35)
 
         if result:
+            user_id_cb = call.from_user.id if call.from_user else 0
+            profile = get_profile(user_id_cb)
+            level = profile.get("level", "novice") if profile else "novice"
             bot.edit_message_text(
-                f"<b>🔎 Джек нашёл похожую проблему:</b>\n\n{fmt_diag(result)}",
+                f"<b>🔎 Джек нашёл похожую проблему:</b>\n\n{format_diagnostic_for_level(result, level)}",
                 call.message.chat.id,
                 call.message.message_id,
                 reply_markup=after_diagnostic_keyboard()
@@ -1077,6 +1095,35 @@ def on_expert_question(call: CallbackQuery) -> None:
         f"<b>Вопрос:</b> {q['question']}\n\n"
         f"Ответьте: /answer_{q_id} [ваш ответ]"
     )
+
+
+# ─── FAQ CALLBACKS ───────────────────────────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda c: c.data == "faq_menu")
+def on_faq_menu(call: CallbackQuery) -> None:
+    bot.answer_callback_query(call.id)
+    from faq import FAQ
+    from keyboards import faq_keyboard
+    text = "📚 <b>FAQ — Частые вопросы</b>\n\nВыберите вопрос:"
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=faq_keyboard())
+
+
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("faq_") and c.data != "faq_menu")
+def on_faq_answer(call: CallbackQuery) -> None:
+    bot.answer_callback_query(call.id)
+    from faq import FAQ
+    from keyboards import faq_back_keyboard
+    try:
+        idx = int(call.data.replace("faq_", ""))
+        item = FAQ[idx]
+        bot.edit_message_text(
+            item["answer"],
+            call.message.chat.id,
+            call.message.message_id,
+            reply_markup=faq_back_keyboard()
+        )
+    except (ValueError, IndexError):
+        pass
 
 
 # ─── ОБЩИЕ CALLBACKS ─────────────────────────────────────────────────────────
