@@ -2123,7 +2123,6 @@ DIALOG_TREES: list[DialogTree] = [
         root_node_id="oil_root",
         nodes={
             "oil_root": DialogNode(
-                node_id="oil_root",
                 question="Как вы заметили проблему с маслом?",
                 hint="Осмотрите под машиной и под капотом",
                 options=[
@@ -2141,7 +2140,6 @@ DIALOG_TREES: list[DialogTree] = [
                 diagnoses={},
             ),
             "oil_ground": DialogNode(
-                node_id="oil_ground",
                 question="Какой размер пятна?",
                 hint="Проверьте утром после ночной стоянки",
                 options=[
@@ -2177,7 +2175,6 @@ DIALOG_TREES: list[DialogTree] = [
                 },
             ),
             "oil_engine": DialogNode(
-                node_id="oil_engine",
                 question="Где именно масло на двигателе?",
                 hint="Осмотрите при холодном двигателе",
                 options=[
@@ -2221,7 +2218,6 @@ DIALOG_TREES: list[DialogTree] = [
                 },
             ),
             "oil_consumption": DialogNode(
-                node_id="oil_consumption",
                 question="Сколько масла уходит на 1000 км?",
                 hint="Замерьте уровень до и после поездки 1000 км",
                 options=[
@@ -2265,7 +2261,6 @@ DIALOG_TREES: list[DialogTree] = [
                 },
             ),
             "oil_smoke": DialogNode(
-                node_id="oil_smoke",
                 question="Когда появляется синий дым?",
                 hint="Понаблюдайте при разных режимах работы",
                 options=[

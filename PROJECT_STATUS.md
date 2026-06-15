@@ -1,8 +1,19 @@
-# Jarvis Auto Bot — статус проекта (на 2026-06-14)
+# Jarvis Auto Bot — статус проекта (на 2026-06-15)
 
 Telegram-бот автодиагностики. Пользователь Alex — нетехнический, генератор идей.
 Все правки делает Claude. Репозиторий: sushentsov12-afk/jarvis-auto.bot
 Хостинг: Railway (worker), Procfile: `worker: python jarvis_bot/bot.py`
+
+## ⚠️ Критический фикс (2026-06-15) — бот не стартовал
+В прошлой сессии в код попали 2 ошибки, обе ломали запуск (ImportError/TypeError
+при старте — бот падал сразу, не успев подключиться к Telegram):
+1. bot.py импортировал `DialogState` из `dialog_state` — класс на самом деле
+   в `dialog_engine`. Исправлено: перенесён в правильный импорт.
+2. dialog_engine.py: новое дерево "масло" (5 узлов: oil_root/oil_ground/
+   oil_engine/oil_consumption/oil_smoke) создавало `DialogNode(node_id=...)` —
+   у DialogNode нет такого поля. Убраны лишние `node_id=`.
+Обе ошибки исправлены и проверены полным импортом bot.py. Без этого пуш в
+прошлой сессии оставил бы Railway в crash-loop.
 
 ## Архитектура
 jarvis_bot/
@@ -63,8 +74,17 @@ novice🔰 / driver🚗 / garage🔧 / mechanic⚙️ / expert🏆
 - Git push: `git remote set-url origin https://<PAT>@github.com/sushentsov12-afk/jarvis-auto.bot.git`
 - requirements.txt: gigachat>=0.2.1 (обязательно, старая 0.1.33 не поддерживает Image/Vision)
 
+## ✅ Готово в этой сессии (2026-06-15)
+- Кнопка "🔄 Объясни проще" под диагнозом (для уровней гараж/механик/эксперт).
+  При нажатии — тот же диагноз, но с расшифровкой терминов (ГБЦ, ЦПГ и т.п.)
+  через simplify_for_novice. Для novice/driver кнопка не нужна — у них и так
+  простой текст.
+  Файлы: dialog_state.py (+set_last_diagnostic/get_last_diagnostic),
+  formatters.py (+format_diagnosis_simple), keyboards.py (after_diagnostic_keyboard
+  получил параметр show_simplify), bot.py (3 точки отправки диагноза +
+  новый callback-хендлер explain_simpler).
+
 ## На горизонте / идеи (не реализовано)
-- Режим "Объясни ещё проще" — кнопка под любым ответом
 - Иллюстрации/схемы мест на авто (ограничения Telegram)
 - Монетизация экспертов при рейтинге 4+ и 10+ ответов
 - Дальнейшее пополнение diagnostic_base.json по логам /unknown

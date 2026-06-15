@@ -6,8 +6,8 @@ from telebot.types import CallbackQuery, Message
 import ai_assistant
 from diagnostic import search_by_phrase, format_diagnostic
 from user_history import add_entry, format_history, has_history
-from dialog_engine import find_tree, get_node, format_diagnosis, URGENCY_EMOJI
-from dialog_state import set_state, get_state, clear_state, DialogState
+from dialog_engine import find_tree, get_node, format_diagnosis, URGENCY_EMOJI, DialogState
+from dialog_state import set_state, get_state, clear_state, set_last_diagnostic, get_last_diagnostic
 from catalog import find_best_match, load_parts, load_services
 from config import BOT_TOKEN
 from network import check_telegram, resolve_proxy
@@ -273,10 +273,12 @@ def process_diagnostic_input(message: Message) -> None:
             car_note = f"\n\n🚗 <i>Для {car['brand']} {car['model']}: уточните у механика применимость.</i>"
         add_entry(user_id, text, result_smart["technical_name"], result_smart.get("urgency", "medium"))
         answer = format_diagnostic_for_level(result_smart, level)
+        show_simplify = level not in ("novice", "driver")
+        set_last_diagnostic(user_id, {"kind": "smart", "result": result_smart})
         bot.send_message(
             message.chat.id,
             f"<b>🔎 Джек определил проблему:</b>\n\n{answer}{car_note}",
-            reply_markup=after_diagnostic_keyboard()
+            reply_markup=after_diagnostic_keyboard(show_simplify=show_simplify)
         )
         return
 
@@ -700,7 +702,12 @@ def on_dialog_answer(call: CallbackQuery) -> None:
         if answer.startswith(opt_key[:50]):
             clear_state(user_id)
             add_entry(user_id, " → ".join(state.answers), diagnosis.title, diagnosis.urgency)
-            bot.send_message(chat_id, f"<b>🔎 Диагноз Джека:</b>\n\n{format_diagnosis(diagnosis)}\n\n<i>Диагностика завершена.</i>", reply_markup=after_diagnostic_keyboard())
+            from user_profile import get_profile
+            profile = get_profile(user_id)
+            level = profile.get("level", "novice") if profile else "novice"
+            show_simplify = level not in ("novice", "driver")
+            set_last_diagnostic(user_id, {"kind": "tree", "diagnosis": diagnosis})
+            bot.send_message(chat_id, f"<b>🔎 Диагноз Джека:</b>\n\n{format_diagnosis(diagnosis)}\n\n<i>Диагностика завершена.</i>", reply_markup=after_diagnostic_keyboard(show_simplify=show_simplify))
             return
 
     next_node_id = None
@@ -970,11 +977,13 @@ def on_clarify_answer(call: CallbackQuery) -> None:
             user_id_cb = call.from_user.id if call.from_user else 0
             profile = get_profile(user_id_cb)
             level = profile.get("level", "novice") if profile else "novice"
+            show_simplify = level not in ("novice", "driver")
+            set_last_diagnostic(user_id_cb, {"kind": "smart", "result": result})
             bot.edit_message_text(
                 f"<b>🔎 Джек нашёл похожую проблему:</b>\n\n{format_diagnostic_for_level(result, level)}",
                 call.message.chat.id,
                 call.message.message_id,
-                reply_markup=after_diagnostic_keyboard()
+                reply_markup=after_diagnostic_keyboard(show_simplify=show_simplify)
             )
         else:
             bot.edit_message_text(
@@ -1124,6 +1133,35 @@ def on_faq_answer(call: CallbackQuery) -> None:
         )
     except (ValueError, IndexError):
         pass
+
+
+# ─── ОБЪЯСНИ ПРОЩЕ ────────────────────────────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda c: c.data == "explain_simpler")
+def on_explain_simpler(call: CallbackQuery) -> None:
+    bot.answer_callback_query(call.id)
+    user_id = call.from_user.id if call.from_user else 0
+    chat_id = call.message.chat.id
+
+    data = get_last_diagnostic(user_id)
+    if not data:
+        bot.send_message(
+            chat_id,
+            "😔 Не нашёл, что упрощать — похоже, диагностика устарела. Запустите новую.",
+            reply_markup=after_diagnostic_keyboard(),
+        )
+        return
+
+    if data["kind"] == "smart":
+        from formatters import format_diagnostic_for_level
+        simple_text = format_diagnostic_for_level(data["result"], "novice")
+        header = "<b>🔎 То же самое, но проще:</b>\n\n"
+    else:
+        from formatters import format_diagnosis_simple
+        simple_text = format_diagnosis_simple(data["diagnosis"])
+        header = "<b>🔎 Диагноз Джека — проще:</b>\n\n"
+
+    bot.send_message(chat_id, header + simple_text, reply_markup=after_diagnostic_keyboard())
 
 
 # ─── ОБЩИЕ CALLBACKS ─────────────────────────────────────────────────────────

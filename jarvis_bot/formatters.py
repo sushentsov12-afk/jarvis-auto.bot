@@ -191,6 +191,20 @@ def simplify_for_novice(text: str) -> str:
     return text
 
 
+def format_diagnosis_simple(d) -> str:
+    """То же, что format_diagnosis (dialog_engine), но с расшифровкой технических
+    терминов — для кнопки '🔄 Объясни проще'."""
+    import dataclasses
+    from dialog_engine import format_diagnosis
+
+    simple = dataclasses.replace(
+        d,
+        explanation=simplify_for_novice(d.explanation),
+        solution=simplify_for_novice(d.solution),
+    )
+    return format_diagnosis(simple)
+
+
 def format_diagnostic_for_level(result: dict, level: str = "novice") -> str:
     """Форматирует результат диагностики с учётом уровня пользователя."""
     urgency_icon = {

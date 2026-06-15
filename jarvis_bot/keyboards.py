@@ -137,8 +137,10 @@ def main_inline_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
-def after_diagnostic_keyboard() -> InlineKeyboardMarkup:
+def after_diagnostic_keyboard(show_simplify: bool = False) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=2)
+    if show_simplify:
+        kb.add(InlineKeyboardButton("🔄 Объясни проще", callback_data="explain_simpler"))
     kb.add(
         InlineKeyboardButton("🔍 Ещё диагностика", callback_data="new_diagnostic"),
         InlineKeyboardButton("🏪 Найти сервис", callback_data="get_services"),
