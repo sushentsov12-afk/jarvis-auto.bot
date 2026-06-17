@@ -148,21 +148,63 @@ def cmd_broadcast(message: Message) -> None:
 
 @bot.message_handler(commands=["unknown"])
 def cmd_unknown(message: Message) -> None:
-    """Топ нераспознанных запросов для пополнения базы."""
+    """Топ нераспознанных запросов с кнопками привязки к теме."""
     import os
     admin_id = str(os.getenv("ADMIN_ID", ""))
     user_id = str(message.from_user.id) if message.from_user else ""
     if not admin_id or user_id != admin_id:
         return
+    _send_unknown_item(message.chat.id, offset=0)
+
+
+def _send_unknown_item(chat_id: int, offset: int = 0) -> None:
+    """Отправляет одну нераспознанную фразу с кнопками выбора темы."""
     from clarify import get_unknown_queries
-    queries = get_unknown_queries(20)
-    if not queries:
-        bot.send_message(message.chat.id, "Нераспознанных запросов нет 🎉")
+    from dialog_engine import DIALOG_TREES
+
+    TREE_LABELS = {
+        "heavy_wheel":      "🛞 Тяжёлый руль",
+        "wont_start":       "🔑 Не заводится",
+        "brake_noise":      "🛑 Тормоза",
+        "overheat":         "🌡 Перегрев",
+        "suspension_knock": "🔩 Стук подвески",
+        "gearbox":          "⚙️ Коробка передач",
+        "smell":            "💨 Запах",
+        "vibration_speed":  "📳 Вибрация",
+        "electrics":        "⚡ Электрика",
+        "aircon":           "❄️ Кондиционер",
+        "oil_leak":         "🛢 Масло",
+    }
+
+    queries = get_unknown_queries(50)
+    # убираем уже привязанные (offset = текущий индекс)
+    if offset >= len(queries):
+        bot.send_message(chat_id, "✅ Нераспознанных запросов больше нет!")
         return
-    lines = ["📋 <b>Нераспознанные запросы (топ-20):</b>\n"]
-    for i, q in enumerate(queries, 1):
-        lines.append(f"{i}. [{q['count']}x] {q['query']}")
-    bot.send_message(message.chat.id, "\n".join(lines))
+
+    q = queries[offset]
+    phrase = q["query"]
+    count = q["count"]
+
+    kb = InlineKeyboardMarkup(row_width=2)
+    for tree_id, label in TREE_LABELS.items():
+        kb.add(InlineKeyboardButton(
+            label,
+            callback_data=f"unk_assign::{offset}::{tree_id}"
+        ))
+    kb.add(
+        InlineKeyboardButton("⏭ Пропустить", callback_data=f"unk_skip::{offset}"),
+        InlineKeyboardButton("🗑 Удалить", callback_data=f"unk_delete::{offset}"),
+    )
+
+    bot.send_message(
+        chat_id,
+        f"❓ <b>Нераспознанная фраза</b> [{offset+1}/{len(queries)}]\n\n"
+        f"<code>{phrase}</code>\n\n"
+        f"Встречалась: <b>{count}x</b>\n\n"
+        f"К какой теме относится?",
+        reply_markup=kb
+    )
 
 @bot.message_handler(commands=["stats"])
 def cmd_stats(message: Message) -> None:
@@ -842,15 +884,7 @@ def on_admin_callback(call: CallbackQuery) -> None:
         bot.send_message(chat_id, f"👥 Пользователей: <b>{get_user_count()}</b>")
 
     elif call.data == "admin_unknown":
-        from clarify import get_unknown_queries
-        queries = get_unknown_queries(20)
-        if not queries:
-            bot.send_message(chat_id, "🎉 Нераспознанных запросов нет!")
-            return
-        lines = ["❓ <b>Нераспознанные запросы (топ-20):</b>\n"]
-        for i, q in enumerate(queries, 1):
-            lines.append(f"{i}. [{q['count']}x] {q['query']}")
-        bot.send_message(chat_id, "\n".join(lines))
+        _send_unknown_item(chat_id, offset=0)
 
     elif call.data == "admin_broadcast":
         bot.send_message(
@@ -1133,6 +1167,61 @@ def on_faq_answer(call: CallbackQuery) -> None:
         )
     except (ValueError, IndexError):
         pass
+
+
+# ─── ADMIN: ПРИВЯЗКА НЕРАСПОЗНАННЫХ ФРАЗ ─────────────────────────────────────
+
+@bot.callback_query_handler(func=lambda c: c.data.startswith(("unk_assign::", "unk_skip::", "unk_delete::")))
+def on_unknown_action(call: CallbackQuery) -> None:
+    bot.answer_callback_query(call.id)
+    parts = call.data.split("::")
+    action = parts[0]
+    offset = int(parts[1])
+    chat_id = call.message.chat.id
+
+    from clarify import get_unknown_queries, save_custom_trigger, delete_unknown_query
+
+    queries = get_unknown_queries(50)
+    if offset >= len(queries):
+        bot.send_message(chat_id, "✅ Фраза уже обработана.")
+        return
+
+    phrase = queries[offset]["query"]
+
+    if action == "unk_assign":
+        tree_id = parts[2]
+        save_custom_trigger(phrase, tree_id)
+        delete_unknown_query(phrase)
+        TREE_LABELS = {
+            "heavy_wheel": "🛞 Тяжёлый руль", "wont_start": "🔑 Не заводится",
+            "brake_noise": "🛑 Тормоза", "overheat": "🌡 Перегрев",
+            "suspension_knock": "🔩 Стук подвески", "gearbox": "⚙️ Коробка",
+            "smell": "💨 Запах", "vibration_speed": "📳 Вибрация",
+            "electrics": "⚡ Электрика", "aircon": "❄️ Кондиционер",
+            "oil_leak": "🛢 Масло",
+        }
+        label = TREE_LABELS.get(tree_id, tree_id)
+        bot.edit_message_text(
+            f"✅ Сохранено: <code>{phrase}</code> → {label}",
+            chat_id, call.message.message_id
+        )
+        # Показываем следующую фразу
+        _send_unknown_item(chat_id, offset=0)
+
+    elif action == "unk_skip":
+        bot.edit_message_text(
+            f"⏭ Пропущено: <code>{phrase}</code>",
+            chat_id, call.message.message_id
+        )
+        _send_unknown_item(chat_id, offset=offset + 1)
+
+    elif action == "unk_delete":
+        delete_unknown_query(phrase)
+        bot.edit_message_text(
+            f"🗑 Удалено: <code>{phrase}</code>",
+            chat_id, call.message.message_id
+        )
+        _send_unknown_item(chat_id, offset=0)
 
 
 # ─── ОБЪЯСНИ ПРОЩЕ ────────────────────────────────────────────────────────────

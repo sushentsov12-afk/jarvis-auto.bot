@@ -2326,12 +2326,26 @@ DIALOG_TREES: list[DialogTree] = [
 # ─────────────────────────────────────────────────────────────────
 
 def find_tree(user_text: str, threshold: int = 55) -> Optional[DialogTree]:
-    """Ищет подходящее дерево диалога по тексту пользователя."""
+    """Ищет подходящее дерево диалога по тексту пользователя.
+    Сначала проверяет пользовательские триггеры из БД, затем встроенные."""
     from rapidfuzz import fuzz
     text = user_text.lower().strip()
     best_tree: Optional[DialogTree] = None
     best_score = 0
 
+    # 1) Пользовательские триггеры (добавленные через /unknown в админке)
+    try:
+        from clarify import get_custom_triggers
+        tree_map = {t.tree_id: t for t in DIALOG_TREES}
+        for entry in get_custom_triggers():
+            score = fuzz.token_set_ratio(text, entry["phrase"])
+            if score > best_score and entry["tree_id"] in tree_map:
+                best_score = score
+                best_tree = tree_map[entry["tree_id"]]
+    except Exception:
+        pass
+
+    # 2) Встроенные триггеры
     for tree in DIALOG_TREES:
         for phrase in tree.trigger_phrases:
             score = fuzz.token_set_ratio(text, phrase.lower())
@@ -2341,7 +2355,7 @@ def find_tree(user_text: str, threshold: int = 55) -> Optional[DialogTree]:
 
     if best_score >= threshold:
         return best_tree
-    return None if best_score >= 55 else None
+    return None
 
 
 def get_node(tree: DialogTree, node_id: str) -> Optional[DialogNode]:

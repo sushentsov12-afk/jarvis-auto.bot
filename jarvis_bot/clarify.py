@@ -25,8 +25,40 @@ def _get_conn():
             timestamp TEXT
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS custom_triggers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            phrase TEXT UNIQUE,
+            tree_id TEXT,
+            added_at TEXT
+        )
+    """)
     conn.commit()
     return conn
+
+
+def save_custom_trigger(phrase: str, tree_id: str) -> None:
+    """Сохраняет пользовательский триггер — фраза → дерево диалога."""
+    with _get_conn() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO custom_triggers (phrase, tree_id, added_at) VALUES (?, ?, ?)",
+            (phrase.lower().strip(), tree_id, datetime.now().isoformat())
+        )
+
+
+def get_custom_triggers() -> list[dict]:
+    """Возвращает все сохранённые пользовательские триггеры."""
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT phrase, tree_id FROM custom_triggers ORDER BY added_at DESC"
+        ).fetchall()
+    return [{"phrase": r[0], "tree_id": r[1]} for r in rows]
+
+
+def delete_unknown_query(phrase: str) -> None:
+    """Удаляет фразу из unknown_queries после привязки к дереву."""
+    with _get_conn() as conn:
+        conn.execute("DELETE FROM unknown_queries WHERE query = ?", (phrase,))
 
 
 def save_unknown_query(user_id: int, query: str) -> None:
