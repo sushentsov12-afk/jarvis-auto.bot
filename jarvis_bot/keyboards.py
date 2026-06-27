@@ -217,6 +217,7 @@ def admin_panel_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton("🗄 База диагностики", callback_data="admin_db_info"),
         InlineKeyboardButton("🔧 Вопросы механику", callback_data="admin_mechanic"),
         InlineKeyboardButton("🏆 Эксперты", callback_data="admin_experts"),
+        InlineKeyboardButton("🤖 Спросить Claude", callback_data="admin_claude"),
     )
     return kb
 

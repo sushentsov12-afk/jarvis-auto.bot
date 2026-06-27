@@ -949,6 +949,20 @@ def on_admin_callback(call: CallbackQuery) -> None:
         )
         bot.send_message(chat_id, text)
 
+    elif call.data == "admin_claude":
+        from config import ANTHROPIC_API_KEY
+        if not ANTHROPIC_API_KEY:
+            bot.send_message(chat_id, "⚠️ ANTHROPIC_API_KEY не задан в переменных окружения Railway.")
+            return
+        from dialog_state import set_state, DialogState
+        set_state(call.from_user.id, "claude_chat")
+        bot.send_message(
+            chat_id,
+            "🤖 <b>Режим Claude</b>\n\n"
+            "Напиши любой вопрос — отвечу через Claude AI.\n\n"
+            "<i>Чтобы выйти — нажми 🏠 Главное меню или /start</i>"
+        )
+
 
 def process_broadcast_input(message: Message) -> None:
     import os
@@ -1291,6 +1305,53 @@ def on_callback(call: CallbackQuery) -> None:
                 bot.send_message(chat_id, f"🥇 <b>{gold.name}</b>\n\n⏰ {gold.work_time}  |  ★ {gold.rating}\n📞 <code>{gold.phone}</code>", reply_markup=back_to_menu_keyboard())
         except Exception:
             pass
+
+
+# ─── CLAUDE CHAT (только для админа) ─────────────────────────────────────────
+
+@bot.message_handler(func=lambda m: get_state(m.from_user.id) == "claude_chat" if m.from_user else False)
+def handle_claude_chat(message: Message) -> None:
+    """Обрабатывает сообщения в режиме диалога с Claude."""
+    import os
+    user = message.from_user
+    if not user or str(user.id) != str(os.getenv("ADMIN_ID", "")):
+        return
+
+    text = message.text or ""
+    if text in ("🏠 Главное меню", "/start", "/admin"):
+        clear_state(user.id)
+        return go_main_menu(message)
+
+    from config import ANTHROPIC_API_KEY
+    if not ANTHROPIC_API_KEY:
+        bot.send_message(message.chat.id, "⚠️ ANTHROPIC_API_KEY не задан.")
+        return
+
+    # Показываем "печатает..."
+    bot.send_chat_action(message.chat.id, "typing")
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            system=(
+                "Ты персональный ассистент Алекса — создателя Jarvis Auto, "
+                "Telegram-бота для диагностики автомобилей. "
+                "Отвечай по-русски, кратко и по делу. "
+                "Можешь помогать с идеями для бота, анализом, текстами, "
+                "техническими вопросами и любыми другими задачами."
+            ),
+            messages=[{"role": "user", "content": text}],
+        )
+        answer = response.content[0].text
+        # Telegram ограничивает сообщения до 4096 символов
+        if len(answer) > 4000:
+            answer = answer[:4000] + "\n\n<i>...ответ обрезан</i>"
+        bot.send_message(message.chat.id, f"🤖 <b>Claude:</b>\n\n{answer}")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Ошибка Claude API: {e}")
 
 
 # ─── ЗАПУСК ───────────────────────────────────────────────────────────────────
